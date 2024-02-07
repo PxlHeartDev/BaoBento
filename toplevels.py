@@ -1,9 +1,10 @@
 # Library imports
 from tkinter import *
 import time
-import re
 import json
-import functools
+from docx import Document
+from docx.shared import Inches
+import os
 
 # Explicit imports
 from tkinter import messagebox, ttk
@@ -13,13 +14,14 @@ from time import strftime
 from main import db, cursor, getCustomerData, refreshCustomerData
 from gui import root, createText, createButton, createEntryBox, createDropdown, createCheckbox
 from sql import retrieveCustomerOrders, deleteCustomer, updateDetails, updateEmail, updateNotif, updatePassword
-from orders import keyFromVal, Appetiser, Bao, Bento, Classic, Side
+from orders import keyFromVal, keyFromValPrecise, indexFromVal, Appetiser, Bao, Bento, Classic, Side
 
 
-
+# Global, for use with marking orders
 global selectedOrder
 selectedOrder = []
 
+# Customer settings menu
 def createCustomerSettingsToplevel():
     # Notification prefences variables
     emailNotif = IntVar()
@@ -88,37 +90,64 @@ def createCustomerSettingsToplevel():
 #############################################################################################################################
 #############################################################################################################################
 
+# Owner menu for creating a new order
 def createOwnerCreateOrderTopLevel():
+    # Create top level
     OwnerCreateOrder = Toplevel(root, bg='#000000')
     OwnerCreateOrder.geometry('960x690')
+
+    # Title and buttons
     createText([OwnerCreateOrder], 1, 0, 4, "Create Order", "Calibri 35 bold")
     createButton([OwnerCreateOrder], 2, 0, 4, "Appetisers", lambda:createOwnerAddItemTopLevel("appetisers"), "Calibri 30")
     createButton([OwnerCreateOrder], 3, 0, 4, "Baos", lambda:createOwnerAddItemTopLevel("baos"), "Calibri 30")
+    createButton([OwnerCreateOrder], 4, 0, 4, "Bentos", lambda:createOwnerAddItemTopLevel("bentos"), "Calibri 30")
+    createButton([OwnerCreateOrder], 5, 0, 4, "Classics", lambda:createOwnerAddItemTopLevel("classics"), "Calibri 30")
+    createButton([OwnerCreateOrder], 6, 0, 4, "Sides", lambda:createOwnerAddItemTopLevel("sides"), "Calibri 30")
 
-    createButton([OwnerCreateOrder], 4, 0, 4, "View order", lambda:[[print(j) for j in i] for i in o.content.values()])
 
+    def completeOrder():
+        o.completeOrder(time.time(), "")
+
+    createButton([OwnerCreateOrder], 7, 0, 4, "View order", lambda:[[print(j) for j in i] for i in o.content.values()])
+    createButton([OwnerCreateOrder], 8, 0, 4, "Complete order", completeOrder)
+
+
+    # Import here for performance and to circumvent circular import issues
     from orders import Order, modTypes, sauceDict
 
+    # Order object
     o = Order()
 
+    # Sub-function, creates the add item top level
     def createOwnerAddItemTopLevel(type: str):
+        # Create top level
         OwnerAddItem = Toplevel(root, bg='#000000')
-        OwnerAddItem.geometry('960x690')
+        OwnerAddItem.geometry('1200x960')
+
+        # Check the item type
         match(type):
             case("appetisers"):
 
+                # Import here because idk honestly man I'm tired, probably circular import circumvention or something
                 from orders import appetisers, appetiserPermittedSauces
 
+                # Store the auto-generated UI elements and variables in a list so they can be easily accessed
                 UIElements = []
                 vars = []
-
+                
+                # Sub-sub-function, runs when the appetiser in the dropdown is changed
                 def appetiserChanged(*args):
+                    # Ignore if it is the init value
                     if('selected' in appetiserSelected.get()): return
+                    # Get the appetiser details in full
                     appStuff = appetisers[keyFromVal(appetisers, appetiserSelected.get())]
+                    # Re-used options list
                     oListMod = []
                     
+                    # Destroy each auto-generated UI element
                     [e.destroy() for e in UIElements]
-                            
+                    
+                    # Clear the lists
                     UIElements.clear()
                     vars.clear()
 
@@ -138,6 +167,9 @@ def createOwnerCreateOrderTopLevel():
                         if(appStuff['defaultSauce'] == 3):
                             oListSauce[2] = "Small Curry"
                         UIElements.append(createDropdown([OwnerAddItem], 5, 2, 1, oListSauce, sauceSelected, "Calibri 15 bold", sauceDict[appStuff['defaultSauce']], 24, 5))
+                    else:
+                        sauceSelected.set("")
+                        UIElements.append(createText([OwnerAddItem], 5, 2, 1, "No sauce", "Calibri 20"))
                     
                     UIElements.append(createButton([OwnerAddItem], 9, 1, 4, "Add Item", addAppetiser, "Calibri 20", pady=5))
 
@@ -157,7 +189,7 @@ def createOwnerCreateOrderTopLevel():
                     oListApp.append(a['name'])
                 appetiserSelected = StringVar()
                 sauceSelected = StringVar()
-                appetiserSelected.trace("w", appetiserChanged)
+                appetiserSelected.trace_add("write", appetiserChanged)
                 createText([OwnerAddItem], 2, 0, 1, "Appetiser: ")
                 createDropdown([OwnerAddItem], 2, 1, 1, oListApp, appetiserSelected, "Calibri 15 bold", "No appetiser selected", 24)
 
@@ -196,7 +228,6 @@ def createOwnerCreateOrderTopLevel():
                     vars.clear()
 
                     vars.append(StringVar())
-                    UIElements.append(createText([OwnerAddItem], 101, 0, 1, ""))
                         
                     oListPickles = []
                     for v in modTypes[1].values():
@@ -226,10 +257,9 @@ def createOwnerCreateOrderTopLevel():
                     messagebox.showinfo("Success", "Successfully added Bao to order", parent=OwnerAddItem)
                     OwnerAddItem.destroy()
 
-                def makePlain():
+                def noPickles():
                     for v in vars[1:]:
                         v.set("No")
-                    sauceSelected.set("No sauce")
 
                 createText([OwnerAddItem], 1, 0, 4, "Baos", "Calibri 35 bold")
                 oListBao = []
@@ -237,8 +267,8 @@ def createOwnerCreateOrderTopLevel():
                     oListBao.append(b['name'])
                 baoSelected = StringVar()
                 sauceSelected = StringVar()
-                baoSelected.trace("w", baoChanged)
-                sauceSelected.trace("w", sauceChanged)
+                baoSelected.trace_add("write", baoChanged)
+                sauceSelected.trace_add("write", sauceChanged)
                 createText([OwnerAddItem], 2, 0, 1, "Bao: ")
                 createDropdown([OwnerAddItem], 2, 1, 1, oListBao, baoSelected, "Calibri 15 bold", "No bao selected", 15)
 
@@ -248,20 +278,298 @@ def createOwnerCreateOrderTopLevel():
                 createText([OwnerAddItem], 4, 0, 3, "Pickles: ", sticky='s', pady=10)
                 createText([OwnerAddItem], 4, 2, 2, "Sauce: ", sticky='s', pady=10)
 
-                createButton([OwnerAddItem], 8, 2, 1, "Plain", makePlain, "Calibri 15")
+                createButton([OwnerAddItem], 8, 2, 1, "No Pickles", noPickles, "Calibri 15")
 
                 note = StringVar()
                 createText([OwnerAddItem], 11, 0, 1, "Notes: ", "Calibri 20", pady=10)
                 createEntryBox([OwnerAddItem], 11, 1, 2, note, "Calibri 20", width=30, ipadx=30)
 
-            case("bentos"):
-                pass
-            case("classics"):
-                pass
-            case("sides"):
-                pass
 
-    
+            case("bentos"):
+
+                # Import here because idk honestly man I'm tired, probably circular import circumvention or something
+                from orders import bentos, bentoSides, bentoPermittedSauces
+
+                # Store the auto-generated UI elements and variables in a list so they can be easily accessed and cleared out
+                UIElements = [[], [], []]
+                vars = [[], [], []]
+                
+                # Sub-sub-function, runs when the bento in the dropdown is changed
+                def bentoChanged(*args):
+                    # Ignore if it is the init value
+                    if('selected' in bentoSelected.get()): return
+                    # Get the bento details in full
+                    bentoStuff = bentos[keyFromVal(bentos, bentoSelected.get())]
+                    bentoSide1 = bentoSides[keyFromVal(bentoSides, bentoSideSelected[0].get())]
+                    bentoSide2 = bentoSides[keyFromVal(bentoSides, bentoSideSelected[1].get())]
+                    # Re-used options list
+                    oListMod = []
+                    
+                    # Destroy each auto-generated UI element
+                    [e.destroy() for e in UIElements[0]]
+                    
+                    # Clear the lists
+                    UIElements[0].clear()
+                    vars[0].clear()
+
+                    for i in range(0, len(bentoStuff['mod'])):
+                        m = bentoStuff['mod'][i]
+                        oListMod.clear()
+                        vars[0].append(StringVar())
+                        for v in modTypes[m['modType']].values():
+                            oListMod.append(v)
+                        UIElements[0].append(createText([OwnerAddItem], 5+i, 0, 1, f"{m['name']}: "))
+                        UIElements[0].append(createDropdown([OwnerAddItem], 5+i, 1, 1, oListMod, vars[0][i], "Calibri 15 bold", modTypes[m['modType']][m['default']], 24))
+
+                    oListBento.clear()
+                    for a in bentoSides.values():
+                        oListBento.append(a['name'])
+                    UIElements[0].append(createText([OwnerAddItem], 10, 0, 2, "Side 1: "))
+                    UIElements[0].append(createDropdown([OwnerAddItem], 11, 1, 1, oListBento, bentoSideSelected[0], "Calibri 15 bold", bentoSides[bentoStuff['side1'][0]]['name'], 24))
+                    
+                    oListBento.clear()
+                    for a in bentoSides.values():
+                        oListBento.append(a['name'])
+                    UIElements[0].append(createText([OwnerAddItem], 20, 0, 2, "Side 2: "))
+                    UIElements[0].append(createDropdown([OwnerAddItem], 21, 1, 1, oListBento, bentoSideSelected[1], "Calibri 15 bold", bentoSides[bentoStuff['side2'][0]]['name'], 24))
+
+                    if(bentoStuff['sauce'] != -1):
+                        oListSauce = []
+                        for i in bentoPermittedSauces:
+                            oListSauce.append(sauceDict[i])
+                        UIElements[0].append(createDropdown([OwnerAddItem], 5, 2, 1, oListSauce, sauceSelected, "Calibri 15 bold", sauceDict[bentoStuff['sauce']], 24, 5))
+                    
+                    UIElements[0].append(createButton([OwnerAddItem], 26, 3, 4, "Add Item", addBento, "Calibri 20", pady=5))
+
+
+                def bentoSideChanged(side: int):
+                    s = side - 1
+                    # Ignore if it is the init value
+                    if(not(bentoSideSelected[s].get())): return
+                    # Get the side details in full
+                    bentoSideStuff = bentoSides[keyFromVal(bentoSides, bentoSideSelected[s].get())]
+                    # Re-used options list
+                    oListMod = []
+                    
+                    # Destroy each auto-generated UI element
+                    [e.destroy() for e in UIElements[side]]
+                    
+                    # Clear the lists
+                    UIElements[side].clear()
+                    vars[side].clear()
+
+                    for i in range(0, len(bentoSideStuff['mod'])):
+                        m = bentoSideStuff['mod'][i]
+                        oListMod.clear()
+                        vars[side].append(StringVar())
+                        for v in modTypes[m['modType']].values():
+                            oListMod.append(v)
+                        UIElements[side].append(createText([OwnerAddItem], (side*10)+1+i, 2, 1, f"{m['name']}: ", "Calibri 15"))
+                        UIElements[side].append(createDropdown([OwnerAddItem], (side*10)+1+i, 3, 1, oListMod, vars[side][i], "Calibri 13 bold", modTypes[m['modType']][m['default']], 18))
+
+                def addBento():
+                    o.addItem(Bento(
+                        count.get(),
+                        keyFromVal(bentos, bentoSelected.get()),
+                        [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars[0]],
+
+                        keyFromVal(bentoSides, bentoSideSelected[0].get()),
+                        [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars[1]],
+
+                        keyFromVal(bentoSides, bentoSideSelected[1].get()),
+                        [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars[2]],
+                        keyFromValPrecise(sauceDict, sauceSelected.get()),
+                        1,
+                        note.get()))
+                    messagebox.showinfo("Success", "Successfully Added bento to order", parent=OwnerAddItem)
+                    OwnerAddItem.destroy()
+
+                createText([OwnerAddItem], 1, 0, 4, "Bentos", "Calibri 35 bold")
+                oListBento = []
+                for a in bentos.values():
+                    oListBento.append(a['name'])
+                bentoSelected = StringVar()
+                bentoSideSelected = [StringVar(), StringVar()]
+                bentoSelected.trace_add("write", bentoChanged)
+                bentoSideSelected[0].trace_add("write", lambda x,y,z:bentoSideChanged(1))
+                bentoSideSelected[1].trace_add("write", lambda x,y,z:bentoSideChanged(2))
+                sauceSelected = StringVar()
+                createText([OwnerAddItem], 2, 0, 1, "Bento: ")
+                createDropdown([OwnerAddItem], 2, 1, 1, oListBento, bentoSelected, "Calibri 15 bold", "No bento selected", 24)
+
+                count = IntVar()
+                createDropdown([OwnerAddItem], 2, 2, 1, [1, 2, 3, 4, 5], count, "Calibri 15 bold", 1, 5)
+
+                createText([OwnerAddItem], 4, 0, 2, "Modifiers: ", sticky='s', pady=10)
+                createText([OwnerAddItem], 4, 2, 2, "Sauce: ", sticky='s', pady=10)
+
+                note = StringVar()
+                createText([OwnerAddItem], 26, 0, 1, "Notes: ", "Calibri 20", pady=10)
+                createEntryBox([OwnerAddItem], 26, 1, 2, note, "Calibri 20", width=30, ipadx=30)
+
+            case("classics"):
+                # Import here because idk honestly man I'm tired, probably circular import circumvention or something
+                from orders import classics, classicSides
+
+                # Store the auto-generated UI elements and variables in a list so they can be easily accessed
+                UIElements = [[], []]
+                vars = [[], []]
+                
+                # Sub-sub-function, runs when the classic in the dropdown is changed
+                def classicChanged(*args):
+                    # Ignore if it is the init value
+                    if('selected' in classicSelected.get()): return
+                    # Get the classic details in full
+                    classicStuff = classics[keyFromVal(classics, classicSelected.get())]
+                    # Re-used options list
+                    oListMod = []
+                    
+                    # Destroy each auto-generated UI element
+                    [e.destroy() for e in UIElements[0]]
+                    
+                    # Clear the lists
+                    UIElements[0].clear()
+                    vars[0].clear()
+
+                    for i in range(0, len(classicStuff['mod'])):
+                        m = classicStuff['mod'][i]
+                        oListMod.clear()
+                        vars[0].append(StringVar())
+                        for v in modTypes[m['modType']].values():
+                            oListMod.append(v)
+                        UIElements[0].append(createText([OwnerAddItem], 5+i, 0, 1, f"{m['name']}: "))
+                        UIElements[0].append(createDropdown([OwnerAddItem], 5+i, 1, 1, oListMod, vars[0][i], "Calibri 15 bold", modTypes[m['modType']][m['default']], 24))
+
+                    if(classicStuff['side'] != -1):
+                        oListSides = []
+                        for i in list(classicSides.values()):
+                            oListSides.append(i['name'])
+                        UIElements[0].append(createDropdown([OwnerAddItem], 5, 3, 1, oListSides, sideSelected, "Calibri 15 bold", classicSides[classicStuff['side']]['name'], 24, 5))
+                    else:
+                        sideSelected.set("")
+                        UIElements[0].append(createText([OwnerAddItem], 5, 2, 1, "No side", "Calibri 20"))
+                    
+                    UIElements[0].append(createButton([OwnerAddItem], 13, 1, 4, "Add Item", addClassic, "Calibri 20", pady=5))
+
+
+                def sideChanged(*args):
+                    # Ignore if it is the init value
+                    if(not(sideSelected.get())): return
+                    # Get the side details in full
+                    sideStuff = classicSides[keyFromVal(classicSides, sideSelected.get())]
+                    # Re-used options list
+                    oListMod = []
+                    
+                    # Destroy each auto-generated UI element
+                    [e.destroy() for e in UIElements[1]]
+                    
+                    # Clear the lists
+                    UIElements[1].clear()
+                    vars[1].clear()
+
+                    for i in range(0, len(sideStuff['mod'])):
+                        m = sideStuff['mod'][i]
+                        oListMod.clear()
+                        vars[1].append(StringVar())
+                        for v in modTypes[m['modType']].values():
+                            oListMod.append(v)
+                        UIElements[1].append(createText([OwnerAddItem], 6+i, 2, 1, f"{m['name']}: ", "Calibri 15"))
+                        UIElements[1].append(createDropdown([OwnerAddItem], 6+i, 3, 1, oListMod, vars[1][i], "Calibri 13 bold", modTypes[m['modType']][m['default']], 18))
+
+                def addClassic():
+                    o.addItem(Classic(
+                        count.get(),
+                        keyFromVal(classics, classicSelected.get()),
+                        [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars[0]],
+                        keyFromVal(classicSides, sideSelected.get()),
+                        [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars[1]],
+                        note.get()))
+                    messagebox.showinfo("Success", "Successfully added classic to order", parent=OwnerAddItem)
+                    OwnerAddItem.destroy()
+
+                createText([OwnerAddItem], 1, 0, 4, "Classics", "Calibri 35 bold")
+                oListCla = []
+                for a in classics.values():
+                    oListCla.append(a['name'])
+                classicSelected = StringVar()
+                sideSelected = StringVar()
+                classicSelected.trace_add("write", classicChanged)
+                sideSelected.trace_add("write", sideChanged)
+                createText([OwnerAddItem], 2, 0, 1, "Classic: ")
+                createDropdown([OwnerAddItem], 2, 1, 1, oListCla, classicSelected, "Calibri 15 bold", "No classic selected", 24)
+
+                count = IntVar()
+                createDropdown([OwnerAddItem], 2, 2, 1, [1, 2, 3, 4, 5], count, "Calibri 15 bold", 1, 5)
+
+                createText([OwnerAddItem], 4, 0, 2, "Modifiers: ", sticky='s', pady=10)
+                createText([OwnerAddItem], 4, 2, 2, "Side: ", sticky='s', pady=10)
+
+                note = StringVar()
+                createText([OwnerAddItem], 12, 0, 1, "Notes: ", "Calibri 20", pady=10)
+                createEntryBox([OwnerAddItem], 12, 1, 2, note, "Calibri 20", width=30, ipadx=30)
+            case("sides"):
+
+                # Import here because idk honestly man I'm tired, probably circular import circumvention or something
+                from orders import sides
+
+                # Store the auto-generated UI elements and variables in a list so they can be easily accessed
+                UIElements = []
+                vars = []
+
+                def sideChanged(*args):
+                    # Ignore if it is the init value
+                    if('selected' in sideSelected.get()): return
+                    # Get the side details in full
+                    sideStuff = sides[keyFromVal(sides, sideSelected.get())]
+                    # Re-used options list
+                    oListMod = []
+                    
+                    # Destroy each auto-generated UI element
+                    [e.destroy() for e in UIElements]
+                    
+                    # Clear the lists
+                    UIElements.clear()
+                    vars.clear()
+
+                    for i in range(0, len(sideStuff['mod'])):
+                        m = sideStuff['mod'][i]
+                        oListMod.clear()
+                        vars.append(StringVar())
+                        for v in modTypes[m['modType']].values():
+                            oListMod.append(v)
+                        UIElements.append(createText([OwnerAddItem], 5+i, 0, 1, f"{m['name']}: ", "Calibri 15"))
+                        UIElements.append(createDropdown([OwnerAddItem], 5+i, 1, 1, oListMod, vars[i], "Calibri 13 bold", modTypes[m['modType']][m['default']], 18))
+
+                    UIElements.append(createButton([OwnerAddItem], 13, 1, 4, "Add Item", addSide, "Calibri 20", pady=5))
+
+                def addSide():
+                    o.addItem(Side(
+                        count.get(),
+                        keyFromVal(sides, sideSelected.get()),
+                        [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars],
+                        note.get()))
+                    messagebox.showinfo("Success", "Successfully added side to order", parent=OwnerAddItem)
+                    OwnerAddItem.destroy()
+
+                createText([OwnerAddItem], 1, 0, 4, "Sides", "Calibri 35 bold")
+                oListSid = []
+                for a in sides.values():
+                    oListSid.append(a['name'])
+                sideSelected = StringVar()
+                sideSelected.trace_add("write", sideChanged)
+                createText([OwnerAddItem], 2, 0, 1, "Side: ")
+                createDropdown([OwnerAddItem], 2, 1, 1, oListSid, sideSelected, "Calibri 15 bold", "No side selected", 24)
+
+                count = IntVar()
+                createDropdown([OwnerAddItem], 2, 2, 1, [1, 2, 3, 4, 5], count, "Calibri 15 bold", 1, 5)
+
+                createText([OwnerAddItem], 4, 0, 2, "Modifiers: ", sticky='s', pady=10)
+
+                note = StringVar()
+                createText([OwnerAddItem], 12, 0, 1, "Notes: ", "Calibri 20", pady=10)
+                createEntryBox([OwnerAddItem], 12, 1, 2, note, "Calibri 20", width=30, ipadx=30)
+
+
 
 #############################################################################################################################
 #############################################################################################################################
@@ -343,7 +651,261 @@ def createOwnerViewOrdersToplevel():
     createButton([OwnerViewOrders], 4, 6, 1, "Mark Paid", command=markPaid, font=buttonFont)
     createText([OwnerViewOrders], 5, 5, 2, "Make sure to check that you have the right\norder and to refresh after marking orders!", font="Calibri 10")
     
+    
     populate()
+
+    def createOrderReceipt():
+        global selectedOrder
+        if(not(selectedOrder)):
+            messagebox.showerror("Error", "No order selected", parent=OwnerViewOrders)
+            return
+        
+        from orders import modTypes, sauceDict, picklesDict, appetisers, baos, bentos, bentoSides, classics, classicSides, sides
+
+        orderNum = selectedOrder[0]
+
+        
+        try:
+            open(f'documents/orderReceipts/{orderNum}.docx')
+        except FileNotFoundError:
+            doc = Document()
+            sections = doc.sections
+            for section in sections:
+                section.top_margin = Inches(0.1)
+                section.bottom_margin = Inches(0.1)
+                section.left_margin = Inches(0.1)
+                section.right_margin = Inches(0.1)
+
+            doc.add_heading(f'Order {orderNum}', 0)
+
+            doc.add_picture('images/bb_logo_b.png', width=Inches(2))
+
+            cursor.execute(f"""SELECT *  FROM orders WHERE orderID = {orderNum}""")
+            orderData = json.loads(str(cursor.fetchone()[2]).removeprefix('b\'').removesuffix('\''))
+
+            doc.add_heading('Appetisers', level=1)
+
+            items = []
+            for d in orderData['appetisers']:
+                mods = []
+
+                for i in range(0, len(d['details'][1])):
+                    modMod = modTypes[appetisers[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
+                    modName = appetisers[d['details'][0]]['mod'][i]['name']
+                    if(modName == "Well done" and modMod == "Not"): continue
+                    if(modName == "Hot" and modMod == "Normal"): continue
+                    if(modName == "Well done"): mods.append(f'{modName}'); continue
+                    if(modName == "Hot"): mods.append(f'{modMod}'); continue
+                    if(modName == "Lemon" and modMod == "Yes"): continue
+                    mods.append(f'{modMod} {modName}')
+                items.append((
+                    f'{d['count']} {appetisers[d['details'][0]]['name']}', 
+                    f'{sauceDict[d['details'][2]]}', 
+                    mods
+                ))
+
+            table = doc.add_table(rows=1, cols=3)
+            header = table.rows[0].cells
+            header[0].text = 'Qty&Name'
+            header[1].text = 'Sauce'
+            header[2].text = 'Mod.'
+            for qname, sauce, mod in items:
+                row = table.add_row().cells
+                row[0].text = qname
+                row[1].text = sauce
+                for m in mod:
+                    row[2].text += f'{m}\n'
+                row[2].text = row[2].text.removesuffix('\n')
+
+
+            doc.add_heading('Baos', level=1)
+            
+            items = []
+            for d in orderData['baos']:
+                items.append((
+                    f'{d['count']} {baos[d['details'][0]]['name']}', 
+                    f'{f"{modTypes[6][d['details'][2]]} " if d['details'][1] != 0 else ""}{sauceDict[d['details'][1]]}', 
+                    [f'{modTypes[1][d['details'][3][i]]} {picklesDict[i + 1]}' for i in range(0, 5)]
+                ))
+
+            table = doc.add_table(rows=1, cols=3)
+            header = table.rows[0].cells
+            header[0].text = 'Qty&Name'
+            header[1].text = 'Sauce'
+            header[2].text = 'Pickles'
+            for qname, sauce, mod in items:
+                row = table.add_row().cells
+                row[0].text = qname
+                row[1].text = sauce
+                for m in mod:
+                    row[2].text += f'{m}\n'
+                row[2].text = row[2].text.removesuffix('\n')
+            
+            
+            doc.add_heading('Bentos', level=1)
+
+            items = []
+            for d in orderData['bentos']:
+                mods = []
+                s1mods = []
+                s2mods = []
+
+                for i in range(0, len(d['details'][1])):
+                    modMod = modTypes[bentos[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
+                    modName = bentos[d['details'][0]]['mod'][i]['name']
+                    if(modName == "Hot" and modMod == "Normal"): continue
+                    if(modName == "Hot"): mods.append(f'{modMod}'); continue
+                    mods.append(f'{modMod} {modName}')
+
+                for i in range(0, len(d['details'][3])):
+                    s1modMod = modTypes[bentoSides[d['details'][2]]['mod'][i]['modType']][d['details'][3][i]]
+                    s1modName = bentoSides[d['details'][2]]['mod'][i]['name']
+                    s1mods.append(f'{s1modMod} {s1modName}')
+
+                for i in range(0, len(d['details'][5])):
+                    s2modMod = modTypes[bentoSides[d['details'][4]]['mod'][i]['modType']][d['details'][5][i]]
+                    s2modName = bentoSides[d['details'][4]]['mod'][i]['name']
+                    s2mods.append(f'{s2modMod} {s2modName}')
+
+                items.append((
+                    f'{d['count']} {bentos[d['details'][0]]['name']}', 
+                    f'{sauceDict[d['details'][6]]}',
+                    '',
+                    mods,
+                    f'{bentoSides[d['details'][2]]['name']}',
+                    s1mods,
+                    f'{bentoSides[d['details'][4]]['name']}',
+                    s2mods,
+                ))
+
+            table = doc.add_table(rows=1, cols=7)
+            header = table.rows[0].cells
+            header[0].text = 'Qty&Name'
+            header[1].text = 'Sauce'
+            header[2].text = 'Mod.'
+            header[3].text = 'Side 1'
+            header[4].text = 'S1 Mod.'
+            header[5].text = 'Side 2'
+            header[6].text = 'S2 Mod.'
+            for qname, sauce, sauceMod, mod, s1, s1m, s2, s2m in items:
+                row = table.add_row().cells
+                row[0].text = qname
+                row[1].text = f'{sauce}{f" ({sauceMod})" if sauceMod else ""}'
+                for m in mod:
+                    row[2].text += f'{m}\n'
+                row[2].text = row[2].text.removesuffix('\n')
+                row[3].text = s1
+                for m1 in s1m:
+                    row[4].text += f'{m1}\n'
+                row[4].text = row[4].text.removesuffix('\n')
+                row[5].text = s2
+                for m2 in s2m:
+                    row[6].text += f'{m2}\n'
+                row[6].text = row[6].text.removesuffix('\n')
+
+            
+            doc.add_heading('Classics', level=1)
+            
+            items = []
+            for d in orderData['classics']:
+                mods = []
+                sMods = []
+
+                for i in range(0, len(d['details'][1])):
+                    modMod = modTypes[classics[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
+                    modName = classics[d['details'][0]]['mod'][i]['name']
+                    if(modName == "Hot" and modMod == "Normal"): continue
+                    if(modName == "Hot"): mods.append(f'{modMod}'); continue
+                    mods.append(f'{modMod} {modName}')
+
+                for i in range(0, len(d['details'][3])):
+                    sModMod = modTypes[classicSides[d['details'][2]]['mod'][i]['modType']][d['details'][3][i]]
+                    sModName = classicSides[d['details'][2]]['mod'][i]['name']
+                    sMods.append(f'{sModMod} {sModName}')
+
+                items.append((
+                    f'{d['count']} {classics[d['details'][0]]['name']}', 
+                    mods,
+                    f'{classicSides[d['details'][2]]['name']}',
+                    sMods,
+                ))
+
+            table = doc.add_table(rows=1, cols=4)
+            header = table.rows[0].cells
+            header[0].text = 'Qty&Name'
+            header[1].text = 'Mod.'
+            header[2].text = 'Side'
+            header[3].text = 'S Mod.'
+            for qname, mod, s, sm in items:
+                row = table.add_row().cells
+                row[0].text = qname
+                for m in mod:
+                    row[1].text += f'{m}\n'
+                row[1].text = row[1].text.removesuffix('\n')
+                row[2].text = s
+                for m in sm:
+                    row[3].text += f'{m}\n'
+                row[3].text = row[3].text.removesuffix('\n')
+            
+
+
+            doc.add_heading('Sides', level=1)
+
+            items = []
+            for d in orderData['sides']:
+                mods = []
+                sMods = []
+                print(d)
+
+                for i in range(0, len(d['details'][1])):
+                    modMod = modTypes[sides[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
+                    modName = sides[d['details'][0]]['mod'][i]['name']
+                    if(modName == "Hot" and modMod == "Normal"): continue
+                    if(modName == "Onion" and modMod == "Yes"): mods.append(f'Plus {modName}'); continue
+                    if(modName == "Onion" and modMod == "No"): continue
+                    mods.append(f'{modMod} {modName}')
+
+                items.append((
+                    f'{d['count']} {sides[d['details'][0]]['name']}', 
+                    mods
+                ))
+
+            table = doc.add_table(rows=1, cols=2)
+            header = table.rows[0].cells
+            header[0].text = 'Qty&Name'
+            header[1].text = 'Mod.'
+            for qname, mod in items:
+                row = table.add_row().cells
+                row[0].text = qname
+                for m in mod:
+                    row[1].text += f'{m}\n'
+                row[1].text = row[1].text.removesuffix('\n')
+            
+            doc.add_page_break()
+
+            doc.save(f'documents/orderReceipts/{orderNum}.docx')
+
+            # records = (
+            #     (3, '101', 'Spam'),
+            #     (7, '422', 'Eggs'),
+            #     (4, '631', 'Spam, spam, eggs, and spam')
+            # )
+
+            # table = doc.add_table(rows=1, cols=3)
+            # hdr_cells = table.rows[0].cells
+            # hdr_cells[0].text = 'Qty'
+            # hdr_cells[1].text = 'Id'
+            # hdr_cells[2].text = 'Desc'
+            # for qty, id, desc in records:
+            #     row_cells = table.add_row().cells
+            #     row_cells[0].text = str(qty)
+            #     row_cells[1].text = id
+            #     row_cells[2].text = desc
+        finally:
+            if os.system(f'start documents/orderReceipts/{orderNum}.docx') != 0:
+                messagebox.showerror("Error", "Cannot open receipt, file already open!", parent=OwnerViewOrders)
+
+    createButton([OwnerViewOrders], 5, 2, 2, "Generate Order Receipt", command=createOrderReceipt, font=buttonFont, width=20)
 
 #############################################################################################################################
 #############################################################################################################################
@@ -474,11 +1036,18 @@ def orderSelected(event, tree):
                         classics = tree.insert(order, END, values=[f"    {text['title']}", floatToPrice(text['price'])])
                         if(classicItem.note):
                             tree.insert(classics, END, values=[f"            Note: {classicItem.note}"])
-                        side = tree.insert(bentos, END, values=[f"            {text['side']}"])
-                        tree.insert(side, END, values=[f"                   {text['sideMod']}"])
+                        side = tree.insert(classics, END, values=[f"            {text['side']}"])
+                        for m in text['sideMod']:
+                            tree.insert(side, END, values=[f"                   {m}"])
                         totalPrice += float(text['price'])
                     case("sides"):
-                        pass
+                        sideItem = Side(jtem['count'], *jtem['details'], jtem['note'])
+                        text = sideItem.outputPretty()
+                        sides = tree.insert(order, END, values=[f"    {text['title']}", floatToPrice(text['price'])])
+                        if(sideItem.note):
+                            tree.insert(sides, END, values=[f"            Note: {sideItem.note}"])
+                        for m in text['sideMod']:
+                            tree.insert(sides, END, values=[f"            {m}"])
                         totalPrice += float(text['price'])
 
         tree.insert("", END, values=[""])
@@ -487,9 +1056,283 @@ def orderSelected(event, tree):
 #############################################################################################################################
 #############################################################################################################################
 #############################################################################################################################
+        
+def createOwnerReportsToplevel():
+
+    # Import item details
+    from orders import appetisers, baos, bentos, classics, sides
+
+    # Create toplevel
+    OwnerReports = Toplevel(root, bg='#000000')
+    OwnerReports.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerReports))
+    OwnerReports.geometry("1500x500")
+    createText([OwnerReports], 1, 0, 4, "Reports", "Calibri 35 bold")
+
+    oList = ["All Time", "Current Month", "Current Year"]
+    oListMonth = ["Whole Year"]
+    UIElements = [[], [], []]
+
+    for y in range(2023, int(strftime("%Y")) + 1):
+        oList.append(strftime("%Y", time.struct_time([y, 1, 1, 0, 0, 0, 0, 1, 0])))
+
+    selectedPeriod = StringVar()
+    selectedMonth = StringVar()
+    selectedItemCat = StringVar()
+    selectedItem = StringVar()
+
+    createDropdown([OwnerReports], 2, 0, 2, oList, selectedPeriod, "Calibri 20", "All Time")
+
+    [e.destroy() for e in UIElements[1]]
+    UIElements[1].clear()
+    oListItemCats = ["Appetisers", "Baos", "Bentos", "Classics", "Sides"]
+    UIElements[1].append(createDropdown([OwnerReports], 5, 2, 1, oListItemCats, selectedItemCat, "Calibri 20", "Appetisers"))
+
+    #time.strftime("")
+    def periodChanged(*args):
+        [e.destroy() for e in UIElements[0]]
+        UIElements[0].clear()
+        oListMonth = ["Whole Year"]
+        if(selectedPeriod.get() in ["All Time", "Current Month", "Current Year"]):
+            return
+        if(int(strftime("%Y")) > int(selectedPeriod.get())): r = 13
+        else: r = int(strftime("%m"))
+        for m in range(1, r):
+            oListMonth.append(strftime("%B", time.struct_time([y, m, 1, 0, 0, 0, 0, 1, 0])))
+        UIElements[0].append(createDropdown([OwnerReports], 2, 2, 2, oListMonth, selectedMonth, "Calibri 20", "Whole Year"))
+
+
+    cat = [{}]
+    def itemCatChanged(*args):
+        [e.destroy() for e in UIElements[2]]
+        UIElements[2].clear()
+        match(selectedItemCat.get()):
+            case("Appetisers"):
+                cat[0] = appetisers
+            case("Baos"):
+                cat[0] = baos
+            case("Bentos"):
+                cat[0] = bentos
+            case("Classics"):
+                cat[0] = classics
+            case("Sides"):
+                cat[0] = sides
+    
+    selectedPeriod.trace_add("write", periodChanged)
+    selectedItemCat.trace_add("write", itemCatChanged)
+
+    periodChanged()
+    itemCatChanged()
+    
+    # # Document generation for sold food items
+    # def generateSoldFoodItemsReport(timeMin = 0, timeMax = 1672531200):
+    #     doc = Document()
+    #     doc.add_heading('Sold Food Items', 0)
+
+    #     doc.add_picture('images/bb_logo_b.png', width=Inches(2))
+
+    #     match(selectedPeriod.get()):
+    #         case("Current Month"):
+    #             doc.add_paragraph(f"For the month of {strftime("%B")}")
+    #             doc.add_paragraph("As of the " + ordinal(int(strftime("%d"))))
+    #         case("Current Year"):
+    #             doc.add_paragraph(f"For the year of {strftime("%Y")}")
+    #             doc.add_paragraph(f"As of the {ordinal(int(strftime("%d")))} of {strftime("%B")}")
+    #         case("All Time"):
+    #             doc.add_paragraph(f"All current data")
+    #         case(_):
+    #             doc.add_paragraph(f"For the month of {strftime("%B, %Y", time.localtime(timeMin))}")
+            
+    #     cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {timeMin} AND placementTime < {timeMax}""")
+    #     data = cursor.fetchall()
+    #     app = [[o['name'], 0] for o in appetisers.values()]
+    #     bao = [[o['name'], 0] for o in baos.values()]
+    #     ben = [[o['name'], 0] for o in bentos.values()]
+    #     #cla = [[o['name'], 0] for o in classics.values()]
+    #     #sid = [[o['name'], 0] for o in sides.values()]
+        
+    #     for dat in data:
+    #         d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))
+    #         for a in d['appetisers']:
+    #             app[a['details'][0] - 1][1] += a['count']
+    #         for b in d['baos']:
+    #             bao[b['details'][0] - 1][1] += b['count']
+    #         for b in d['bentos']:
+    #             ben[b['details'][0] - 1][1] += b['count']
+    #         for c in d['classics']:
+    #             pass
+    #         for s in d['sides']:
+    #             pass
+
+    #     records = (["Appetisers", app], ["Baos", bao], ["Bentos", ben])#, ["Classics", cla], ["Sides", sid])
+
+    #     for r in records:
+    #         doc.add_heading(r[0], level=1)
+    #         table = doc.add_table(rows=1, cols=2)
+    #         header = table.rows[0].cells
+    #         header[0].text = 'Name'
+    #         header[1].text = 'Qty Sold'
+    #         total = 0
+    #         for name, qty in r[1]:
+    #             row = table.add_row().cells
+    #             row[0].text = name
+    #             row[1].text = str(qty)
+    #             total += qty
+    #         doc.add_page_break()
+    #         row = table.add_row().cells
+    #         row[0].text = "Total sold"
+    #         row[1].text = str(total)
+
+    #     doc.add_page_break()
+
+    #     try:
+    #         doc.save('documents/report.docx')
+    #         os.system('start documents/report.docx')
+    #     except PermissionError:
+    #         messagebox.showerror("Error", "File already open!\nPlease close the active report file to update the details", parent=OwnerReports)
+    
+
+
+    def generateSoldFoodItemsGraph(item: str):
+        title = ""
+                
+        monYr = time.localtime()
+        timeRange = [0.0, 1672531200.0]
+        match(selectedPeriod.get()):
+            case("Current Month"):
+                timeRange = [monthToTime(monYr.tm_mon, monYr.tm_year), monthToTime(monYr.tm_mon + 1, monYr.tm_year)]
+                title = f"For the month of {strftime("%B")}\nAs of the {ordinal(int(strftime("%d")))}"
+            case("Current Year"):
+                timeRange = [monthToTime(1, monYr.tm_year), monthToTime(1, time.localtime().tm_year + 1)]
+                title = f"For the year of {strftime("%Y")}\nAs of the {ordinal(int(strftime("%d")))} of {strftime("%B")}"
+            case("All Time"):
+                title = f"All current data"
+            case(_):
+                if(selectedMonth.get() == "Whole Year"):
+                    timeRange = [monthToTime(1, selectedPeriod.get()), monthToTime(1, int(selectedPeriod.get()) + 1)]
+                    title = f"For the year of {strftime("%Y", time.localtime(timeRange[0] + 1672531200))}"
+                else:
+                    timeRange = [monthToTime(indexFromVal(months, selectedMonth.get()) + 1, selectedPeriod.get()), monthToTime(indexFromVal(months, selectedMonth.get()) + 2, selectedPeriod.get())]
+                    title = f"For the month of {strftime("%B, %Y", time.localtime(timeRange[0] + 1672531200))}"
+
+        title = f"{selectedItemCat.get()}\n{title}"
+                   
+        graphData = []
+
+        curTimeCheck = timeRange[0]
+        while curTimeCheck < timeRange[1]:
+            curTime = time.localtime(curTimeCheck)
+            timeNext = curTime
+            timeNext = time.struct_time([timeNext.tm_year, timeNext.tm_mon + 1, *timeNext[2:9]])
+            curTimeCheck = time.mktime(timeNext)
+
+            cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {time.mktime(curTime)} AND placementTime < {time.mktime(timeNext)}""")
+            data = cursor.fetchall()
+            
+            for i in list(cat[0].values()):
+                graphData.append([i['name'], 0])
+
+            for dat in data:
+                d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))[selectedItemCat.get().lower()]
+                for i in d:
+                    graphData[indexFromVal(graphData, f'\'{cat[0][i['details'][0]]['name']}\'')][1] += i['count']
+                    #graphData.append([strftime("%b, %Y", curTime), count])
+                #graphData.append([cat[0][keyFromVal(cat[0], selectedItem.get())]['name'], count])
+
+
+            ###
+
+        # cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {timeRange[0]} AND placementTime < {timeRange[1]}""")
+        # data = cursor.fetchall()
+        # app = [[o['name'], 0] for o in appetisers.values()]
+        # bao = [[o['name'], 0] for o in baos.values()]
+        # ben = [[o['name'], 0] for o in bentos.values()]
+        # beS = [[o['name'], 0] for o in bentoSides.values()]
+        # #cla = [[o['name'], 0] for o in classics.values()]
+        # #sid = [[o['name'], 0] for o in sides.values()]
+        
+        # for dat in data:
+        #     d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))
+        #     for a in d['appetisers']:
+        #         app[a['details'][0] - 1][1] += a['count']
+        #     for b in d['baos']:
+        #         bao[b['details'][0] - 1][1] += b['count']
+        #     for b in d['bentos']:
+        #         ben[b['details'][0] - 1][1] += b['count']
+        #     for c in d['classics']:
+        #         pass
+        #     for s in d['sides']:
+        #         pass
+
+        plotBarChart(title, "Item", "Qty Sold", graphData)
+
+    def plotBarChart(graphName: str, xName: str, yName: str, data: list[list]):
+        import matplotlib.pyplot as mpl
+        
+        fig = mpl.figure(figsize=(14.0, 8.0))
+        graph = fig.subplots()
+        #graph = mpl.figure(figsize=(8.0, 4.5))
+
+        count = 0
+        for i in data:
+            if(i[1]) != 0:
+                b = graph.bar(truncateText(i[0], 10), i[1], 0.9).set_label(i[0])
+                count += 1
+        
+        graph.set_xlabel(xName)
+        graph.set_ylabel(yName)
+        graph.set_title(graphName)
+        graph.set_xlim(0.6)
+        graph.axis([-0.6, count, 0, max([i[1] for i in data]) + 1])
+
+        try:
+            graph.set_yticks([y for y in range(0, max([i[1] for i in data]) + 1)])
+            # Show the legend
+            graph.legend()
+            
+            # Show the plot in a separate window
+            mpl.show()
+        except ValueError:
+            messagebox.showerror("Error", "No items in category for given time range", parent=OwnerReports)
+        
+
+    #plotBarChart("Test", "X", "Y", [["Thing", 1], ["Thing2", 2], ["Thing3", 3]])
+
+    # createButton([OwnerReports], 4, 0, 2, "Sold Food Items - Quantities", lambda:generateSoldFoodItemsReport(), "Calibri 20", width=30)
+    createButton([OwnerReports], 5, 0, 2, "Sold Food Items", lambda:generateSoldFoodItemsGraph(selectedItem.get()), "Calibri 20", width=30)
+    #createButton([OwnerReports], 6, 0, 2, "Sold Food Items - Item by Catgeory", lambda:generateSoldFoodItemsGraph(), "Calibri 20")
+
+#############################################################################################################################
+#############################################################################################################################
+#############################################################################################################################
 
 def floatToPrice(f: float):
     return f"£{format(f, ',.2f')}"
+
+def ordinal(n: int):
+    if 11 <= (n % 100) <= 13:
+        suffix = 'th'
+    else:
+        suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
+    return str(n) + suffix
+
+def monthToTime(month: int or str, year: int or str):
+    if(type(month) == int):
+        m = month
+    else:
+        m = indexFromVal(months, month) + 1
+    if(type(year) == int):
+        y = year
+    else:
+        y = int(year)
+    return time.mktime(time.struct_time([y, m, 1, 1, 0, 0, 0, 1, 0])) - 1672531200
+    
+months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+def truncateText(text: str, length: int):
+    if(len(text) <= length + 1):
+        return text
+    else:
+        return f'{text[0:length]}...'
 
 def closedWindow(frame):
     global selectedOrder

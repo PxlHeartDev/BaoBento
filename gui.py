@@ -247,7 +247,8 @@ createButton([OwnerMenu], 2, 0, 4, "Create an Order", lambda:createOwnerCreateOr
 createButton([OwnerMenu], 3, 0, 4, "View Orders", lambda:createOwnerViewOrdersToplevel(), "Calibri 18", ipadx=20)
 createButton([OwnerMenu], 4, 0, 4, "Manage Customers", lambda:createOwnerManageCustomersToplevel(), "Calibri 18", ipadx=20)
 createButton([OwnerMenu], 5, 0, 4, "Manage Employees", lambda:setFrame(OwnerManageEmployees), "Calibri 18", ipadx=20)
-createButton([OwnerMenu], 6, 0, 4, "Logout", lambda:logout(), "Calibri 18", ipadx=20)
+createButton([OwnerMenu], 6, 0, 4, "Reports", lambda:createOwnerReportsToplevel(), "Calibri 18", ipadx=20)
+createButton([OwnerMenu], 7, 0, 4, "Logout", lambda:logout(), "Calibri 18", ipadx=20)
 
 # Imported at the bottom to avoid a circular import error
 from toplevels import *

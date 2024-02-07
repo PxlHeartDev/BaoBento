@@ -1,6 +1,7 @@
 # Library Imports
 import sys
 import tkinter
+import os
 
 # mysql.connector must be imported explicitly
 import mysql.connector
@@ -68,11 +69,11 @@ if __name__ == "__main__":
             pickupTime BIGINT,
             note VARCHAR(255)
         )""")
-    print("Database successfully created")
+    print("Database successfully created or already exists")
 
     cursor.execute("SELECT * FROM employees WHERE employeeID = 1")
     if(not(cursor.fetchone())):
-        print("\nCreating default Owner Profile")
+        print("\nOwner login not found, creating a default login")
         cursor.execute(f"""
             INSERT INTO employees (employeeID, firstName, lastName, accessKey)
             VALUES
@@ -83,13 +84,13 @@ if __name__ == "__main__":
     # Version print
     print(f"""
 Version Info:
-├ Tkinter {tkinter.TkVersion}5
+├ Tkinter {tkinter.TkVersion}
 ├ Python {sys.version.split(' ')[0]}
 └ MySQL Server {'.'.join([str(v) for v in db.get_server_version()])}
 """)
 # Tested fully on:
 # Tkinter 8.6
-# Python 3.12
+# Python 3.12.0
 # MySQL Server 8.0.35
 
 cursor.execute("USE baobento")
