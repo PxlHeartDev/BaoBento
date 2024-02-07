@@ -724,7 +724,7 @@ def createOwnerViewOrdersToplevel():
             for d in orderData['baos']:
                 items.append((
                     f'{d['count']} {baos[d['details'][0]]['name']}', 
-                    f'{f"{modTypes[6][d['details'][2]]} " if d['details'][1] != 0 else ""}{sauceDict[d['details'][1]]}', 
+                    f'{f"{modTypes[5][d['details'][2]]} " if d['details'][1] != 0 else ""}{sauceDict[d['details'][1]]}', 
                     [f'{modTypes[1][d['details'][3][i]]} {picklesDict[i + 1]}' for i in range(0, 5)]
                 ))
 
