@@ -5,9 +5,11 @@ import json
 from docx import Document
 from docx.shared import Inches
 import os
+import math
 
 # Explicit imports
 from tkinter import messagebox, ttk
+from tkinter.simpledialog import askinteger, askstring
 from time import strftime
 
 # Me imports
@@ -106,9 +108,12 @@ def createOwnerCreateOrderTopLevel():
 
 
     def completeOrder():
-        o.completeOrder(time.time(), "")
+        o.completeOrder(
+            askinteger("Pickup time", "Please enter a pickup time in seconds since Jan 1 2024, 00:00 UTC+0"),
+            askstring("Notes", "Please enter any notes about the order, such as allergens or specific requests")
+        )
 
-    createButton([OwnerCreateOrder], 7, 0, 4, "View order", lambda:[[print(j) for j in i] for i in o.content.values()])
+    createButton([OwnerCreateOrder], 7, 0, 4, "View order", lambda:createOrderReceipt(OwnerCreateOrder, o.getOrderContent()))
     createButton([OwnerCreateOrder], 8, 0, 4, "Complete order", completeOrder)
 
 
@@ -616,8 +621,8 @@ def createOwnerViewOrdersToplevel():
                 d[1], 
                 f"{itemCount} item{'s' if itemCount > 1 else ''}", 
                 "Yes" if d[3] else "No", "Yes" if d[4] else "No", 
-                strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[5] + 1672531200)), 
-                strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[6] + 1672531200))
+                strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[5] + 1704067200)), 
+                strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[6] + 1704067200))
             ])
             treeview.bind('<<TreeviewSelect>>', lambda event: orderSelected(event, orderTreeview))
         for c, h, w in zip(columns, headings, widths):
@@ -654,258 +659,246 @@ def createOwnerViewOrdersToplevel():
     
     populate()
 
-    def createOrderReceipt():
+    createButton([OwnerViewOrders], 5, 2, 2, "Generate Order Receipt", command=lambda:createOrderReceipt(OwnerViewOrders), font=buttonFont, width=20)
+
+
+def createOrderReceipt(parentTV, orderData = {}):
+    if(orderData == {}):
         global selectedOrder
         if(not(selectedOrder)):
-            messagebox.showerror("Error", "No order selected", parent=OwnerViewOrders)
+            messagebox.showerror("Error", "No order selected", parent=parentTV)
             return
-        
-        from orders import modTypes, sauceDict, picklesDict, appetisers, baos, bentos, bentoSides, classics, classicSides, sides
-
-        orderNum = selectedOrder[0]
-
-        
-        try:
+    
+    from orders import modTypes, sauceDict, picklesDict, appetisers, baos, bentos, bentoSides, classics, classicSides, sides
+    
+    try:
+        if(orderData == {}):
+            orderNum = selectedOrder[0]
             open(f'documents/orderReceipts/{orderNum}.docx')
-        except FileNotFoundError:
-            doc = Document()
-            sections = doc.sections
-            for section in sections:
-                section.top_margin = Inches(0.1)
-                section.bottom_margin = Inches(0.1)
-                section.left_margin = Inches(0.1)
-                section.right_margin = Inches(0.1)
+        else:
+            orderNum = 'NA - Temporary receipt'
+            raise FileNotFoundError
+    except FileNotFoundError:
+        doc = Document()
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Inches(0.1)
+            section.bottom_margin = Inches(0.1)
+            section.left_margin = Inches(0.1)
+            section.right_margin = Inches(0.1)
 
-            doc.add_heading(f'Order {orderNum}', 0)
+        doc.add_heading(f'Order {orderNum}', 0)
 
-            doc.add_picture('images/bb_logo_b.png', width=Inches(2))
+        doc.add_picture('images/bb_logo_b.png', width=Inches(2))
 
+        if(orderData == {}):
             cursor.execute(f"""SELECT *  FROM orders WHERE orderID = {orderNum}""")
             orderData = json.loads(str(cursor.fetchone()[2]).removeprefix('b\'').removesuffix('\''))
 
-            doc.add_heading('Appetisers', level=1)
+        doc.add_heading('Appetisers', level=1)
 
-            items = []
-            for d in orderData['appetisers']:
-                mods = []
+        items = []
+        for d in orderData['appetisers']:
+            mods = []
 
-                for i in range(0, len(d['details'][1])):
-                    modMod = modTypes[appetisers[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
-                    modName = appetisers[d['details'][0]]['mod'][i]['name']
-                    if(modName == "Well done" and modMod == "Not"): continue
-                    if(modName == "Hot" and modMod == "Normal"): continue
-                    if(modName == "Well done"): mods.append(f'{modName}'); continue
-                    if(modName == "Hot"): mods.append(f'{modMod}'); continue
-                    if(modName == "Lemon" and modMod == "Yes"): continue
-                    mods.append(f'{modMod} {modName}')
-                items.append((
-                    f'{d['count']} {appetisers[d['details'][0]]['name']}', 
-                    f'{sauceDict[d['details'][2]]}', 
-                    mods
-                ))
+            for i in range(0, len(d['details'][1])):
+                modMod = modTypes[appetisers[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
+                modName = appetisers[d['details'][0]]['mod'][i]['name']
+                if(modName == "Well done" and modMod == "Not"): continue
+                if(modName == "Hot" and modMod == "Normal"): continue
+                if(modName == "Well done"): mods.append(f'{modName}'); continue
+                if(modName == "Hot"): mods.append(f'{modMod}'); continue
+                if(modName == "Lemon" and modMod == "Yes"): continue
+                mods.append(f'{modMod} {modName}')
+            items.append((
+                f'{d['count']} {appetisers[d['details'][0]]['name']}', 
+                f'{sauceDict[d['details'][2]]}', 
+                mods
+            ))
 
-            table = doc.add_table(rows=1, cols=3)
-            header = table.rows[0].cells
-            header[0].text = 'Qty&Name'
-            header[1].text = 'Sauce'
-            header[2].text = 'Mod.'
-            for qname, sauce, mod in items:
-                row = table.add_row().cells
-                row[0].text = qname
-                row[1].text = sauce
-                for m in mod:
-                    row[2].text += f'{m}\n'
-                row[2].text = row[2].text.removesuffix('\n')
-
-
-            doc.add_heading('Baos', level=1)
-            
-            items = []
-            for d in orderData['baos']:
-                items.append((
-                    f'{d['count']} {baos[d['details'][0]]['name']}', 
-                    f'{f"{modTypes[5][d['details'][2]]} " if d['details'][1] != 0 else ""}{sauceDict[d['details'][1]]}', 
-                    [f'{modTypes[1][d['details'][3][i]]} {picklesDict[i + 1]}' for i in range(0, 5)]
-                ))
-
-            table = doc.add_table(rows=1, cols=3)
-            header = table.rows[0].cells
-            header[0].text = 'Qty&Name'
-            header[1].text = 'Sauce'
-            header[2].text = 'Pickles'
-            for qname, sauce, mod in items:
-                row = table.add_row().cells
-                row[0].text = qname
-                row[1].text = sauce
-                for m in mod:
-                    row[2].text += f'{m}\n'
-                row[2].text = row[2].text.removesuffix('\n')
-            
-            
-            doc.add_heading('Bentos', level=1)
-
-            items = []
-            for d in orderData['bentos']:
-                mods = []
-                s1mods = []
-                s2mods = []
-
-                for i in range(0, len(d['details'][1])):
-                    modMod = modTypes[bentos[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
-                    modName = bentos[d['details'][0]]['mod'][i]['name']
-                    if(modName == "Hot" and modMod == "Normal"): continue
-                    if(modName == "Hot"): mods.append(f'{modMod}'); continue
-                    mods.append(f'{modMod} {modName}')
-
-                for i in range(0, len(d['details'][3])):
-                    s1modMod = modTypes[bentoSides[d['details'][2]]['mod'][i]['modType']][d['details'][3][i]]
-                    s1modName = bentoSides[d['details'][2]]['mod'][i]['name']
-                    s1mods.append(f'{s1modMod} {s1modName}')
-
-                for i in range(0, len(d['details'][5])):
-                    s2modMod = modTypes[bentoSides[d['details'][4]]['mod'][i]['modType']][d['details'][5][i]]
-                    s2modName = bentoSides[d['details'][4]]['mod'][i]['name']
-                    s2mods.append(f'{s2modMod} {s2modName}')
-
-                items.append((
-                    f'{d['count']} {bentos[d['details'][0]]['name']}', 
-                    f'{sauceDict[d['details'][6]]}',
-                    '',
-                    mods,
-                    f'{bentoSides[d['details'][2]]['name']}',
-                    s1mods,
-                    f'{bentoSides[d['details'][4]]['name']}',
-                    s2mods,
-                ))
-
-            table = doc.add_table(rows=1, cols=7)
-            header = table.rows[0].cells
-            header[0].text = 'Qty&Name'
-            header[1].text = 'Sauce'
-            header[2].text = 'Mod.'
-            header[3].text = 'Side 1'
-            header[4].text = 'S1 Mod.'
-            header[5].text = 'Side 2'
-            header[6].text = 'S2 Mod.'
-            for qname, sauce, sauceMod, mod, s1, s1m, s2, s2m in items:
-                row = table.add_row().cells
-                row[0].text = qname
-                row[1].text = f'{sauce}{f" ({sauceMod})" if sauceMod else ""}'
-                for m in mod:
-                    row[2].text += f'{m}\n'
-                row[2].text = row[2].text.removesuffix('\n')
-                row[3].text = s1
-                for m1 in s1m:
-                    row[4].text += f'{m1}\n'
-                row[4].text = row[4].text.removesuffix('\n')
-                row[5].text = s2
-                for m2 in s2m:
-                    row[6].text += f'{m2}\n'
-                row[6].text = row[6].text.removesuffix('\n')
-
-            
-            doc.add_heading('Classics', level=1)
-            
-            items = []
-            for d in orderData['classics']:
-                mods = []
-                sMods = []
-
-                for i in range(0, len(d['details'][1])):
-                    modMod = modTypes[classics[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
-                    modName = classics[d['details'][0]]['mod'][i]['name']
-                    if(modName == "Hot" and modMod == "Normal"): continue
-                    if(modName == "Hot"): mods.append(f'{modMod}'); continue
-                    mods.append(f'{modMod} {modName}')
-
-                for i in range(0, len(d['details'][3])):
-                    sModMod = modTypes[classicSides[d['details'][2]]['mod'][i]['modType']][d['details'][3][i]]
-                    sModName = classicSides[d['details'][2]]['mod'][i]['name']
-                    sMods.append(f'{sModMod} {sModName}')
-
-                items.append((
-                    f'{d['count']} {classics[d['details'][0]]['name']}', 
-                    mods,
-                    f'{classicSides[d['details'][2]]['name']}',
-                    sMods,
-                ))
-
-            table = doc.add_table(rows=1, cols=4)
-            header = table.rows[0].cells
-            header[0].text = 'Qty&Name'
-            header[1].text = 'Mod.'
-            header[2].text = 'Side'
-            header[3].text = 'S Mod.'
-            for qname, mod, s, sm in items:
-                row = table.add_row().cells
-                row[0].text = qname
-                for m in mod:
-                    row[1].text += f'{m}\n'
-                row[1].text = row[1].text.removesuffix('\n')
-                row[2].text = s
-                for m in sm:
-                    row[3].text += f'{m}\n'
-                row[3].text = row[3].text.removesuffix('\n')
-            
+        table = doc.add_table(rows=1, cols=3)
+        header = table.rows[0].cells
+        header[0].text = 'Qty&Name'
+        header[1].text = 'Sauce'
+        header[2].text = 'Mod.'
+        for qname, sauce, mod in items:
+            row = table.add_row().cells
+            row[0].text = qname
+            row[1].text = sauce
+            for m in mod:
+                row[2].text += f'{m}\n'
+            row[2].text = row[2].text.removesuffix('\n')
 
 
-            doc.add_heading('Sides', level=1)
+        doc.add_heading('Baos', level=1)
+        
+        items = []
+        for d in orderData['baos']:
+            items.append((
+                f'{d['count']} {baos[d['details'][0]]['name']}', 
+                f'{f"{modTypes[5][d['details'][2]]} " if d['details'][1] != 0 else ""}{sauceDict[d['details'][1]]}', 
+                [f'{modTypes[1][d['details'][3][i]]} {picklesDict[i + 1]}' for i in range(0, 5)]
+            ))
 
-            items = []
-            for d in orderData['sides']:
-                mods = []
-                sMods = []
-                print(d)
+        table = doc.add_table(rows=1, cols=3)
+        header = table.rows[0].cells
+        header[0].text = 'Qty&Name'
+        header[1].text = 'Sauce'
+        header[2].text = 'Pickles'
+        for qname, sauce, mod in items:
+            row = table.add_row().cells
+            row[0].text = qname
+            row[1].text = sauce
+            for m in mod:
+                row[2].text += f'{m}\n'
+            row[2].text = row[2].text.removesuffix('\n')
+        
+        
+        doc.add_heading('Bentos', level=1)
 
-                for i in range(0, len(d['details'][1])):
-                    modMod = modTypes[sides[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
-                    modName = sides[d['details'][0]]['mod'][i]['name']
-                    if(modName == "Hot" and modMod == "Normal"): continue
-                    if(modName == "Onion" and modMod == "Yes"): mods.append(f'Plus {modName}'); continue
-                    if(modName == "Onion" and modMod == "No"): continue
-                    mods.append(f'{modMod} {modName}')
+        items = []
+        for d in orderData['bentos']:
+            mods = []
+            s1mods = []
+            s2mods = []
 
-                items.append((
-                    f'{d['count']} {sides[d['details'][0]]['name']}', 
-                    mods
-                ))
+            for i in range(0, len(d['details'][1])):
+                modMod = modTypes[bentos[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
+                modName = bentos[d['details'][0]]['mod'][i]['name']
+                if(modName == "Hot" and modMod == "Normal"): continue
+                if(modName == "Hot"): mods.append(f'{modMod}'); continue
+                mods.append(f'{modMod} {modName}')
 
-            table = doc.add_table(rows=1, cols=2)
-            header = table.rows[0].cells
-            header[0].text = 'Qty&Name'
-            header[1].text = 'Mod.'
-            for qname, mod in items:
-                row = table.add_row().cells
-                row[0].text = qname
-                for m in mod:
-                    row[1].text += f'{m}\n'
-                row[1].text = row[1].text.removesuffix('\n')
-            
-            doc.add_page_break()
+            for i in range(0, len(d['details'][3])):
+                s1modMod = modTypes[bentoSides[d['details'][2]]['mod'][i]['modType']][d['details'][3][i]]
+                s1modName = bentoSides[d['details'][2]]['mod'][i]['name']
+                s1mods.append(f'{s1modMod} {s1modName}')
 
-            doc.save(f'documents/orderReceipts/{orderNum}.docx')
+            for i in range(0, len(d['details'][5])):
+                s2modMod = modTypes[bentoSides[d['details'][4]]['mod'][i]['modType']][d['details'][5][i]]
+                s2modName = bentoSides[d['details'][4]]['mod'][i]['name']
+                s2mods.append(f'{s2modMod} {s2modName}')
 
-            # records = (
-            #     (3, '101', 'Spam'),
-            #     (7, '422', 'Eggs'),
-            #     (4, '631', 'Spam, spam, eggs, and spam')
-            # )
+            items.append((
+                f'{d['count']} {bentos[d['details'][0]]['name']}', 
+                f'{sauceDict[d['details'][6]]}',
+                '',
+                mods,
+                f'{bentoSides[d['details'][2]]['name']}',
+                s1mods,
+                f'{bentoSides[d['details'][4]]['name']}',
+                s2mods,
+            ))
 
-            # table = doc.add_table(rows=1, cols=3)
-            # hdr_cells = table.rows[0].cells
-            # hdr_cells[0].text = 'Qty'
-            # hdr_cells[1].text = 'Id'
-            # hdr_cells[2].text = 'Desc'
-            # for qty, id, desc in records:
-            #     row_cells = table.add_row().cells
-            #     row_cells[0].text = str(qty)
-            #     row_cells[1].text = id
-            #     row_cells[2].text = desc
-        finally:
-            if os.system(f'start documents/orderReceipts/{orderNum}.docx') != 0:
-                messagebox.showerror("Error", "Cannot open receipt, file already open!", parent=OwnerViewOrders)
+        table = doc.add_table(rows=1, cols=7)
+        header = table.rows[0].cells
+        header[0].text = 'Qty&Name'
+        header[1].text = 'Sauce'
+        header[2].text = 'Mod.'
+        header[3].text = 'Side 1'
+        header[4].text = 'S1 Mod.'
+        header[5].text = 'Side 2'
+        header[6].text = 'S2 Mod.'
+        for qname, sauce, sauceMod, mod, s1, s1m, s2, s2m in items:
+            row = table.add_row().cells
+            row[0].text = qname
+            row[1].text = f'{sauce}{f" ({sauceMod})" if sauceMod else ""}'
+            for m in mod:
+                row[2].text += f'{m}\n'
+            row[2].text = row[2].text.removesuffix('\n')
+            row[3].text = s1
+            for m1 in s1m:
+                row[4].text += f'{m1}\n'
+            row[4].text = row[4].text.removesuffix('\n')
+            row[5].text = s2
+            for m2 in s2m:
+                row[6].text += f'{m2}\n'
+            row[6].text = row[6].text.removesuffix('\n')
 
-    createButton([OwnerViewOrders], 5, 2, 2, "Generate Order Receipt", command=createOrderReceipt, font=buttonFont, width=20)
+        
+        doc.add_heading('Classics', level=1)
+        
+        items = []
+        for d in orderData['classics']:
+            mods = []
+            sMods = []
+
+            for i in range(0, len(d['details'][1])):
+                modMod = modTypes[classics[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
+                modName = classics[d['details'][0]]['mod'][i]['name']
+                if(modName == "Hot" and modMod == "Normal"): continue
+                if(modName == "Hot"): mods.append(f'{modMod}'); continue
+                mods.append(f'{modMod} {modName}')
+
+            for i in range(0, len(d['details'][3])):
+                sModMod = modTypes[classicSides[d['details'][2]]['mod'][i]['modType']][d['details'][3][i]]
+                sModName = classicSides[d['details'][2]]['mod'][i]['name']
+                sMods.append(f'{sModMod} {sModName}')
+
+            items.append((
+                f'{d['count']} {classics[d['details'][0]]['name']}', 
+                mods,
+                f'{classicSides[d['details'][2]]['name']}',
+                sMods,
+            ))
+
+        table = doc.add_table(rows=1, cols=4)
+        header = table.rows[0].cells
+        header[0].text = 'Qty&Name'
+        header[1].text = 'Mod.'
+        header[2].text = 'Side'
+        header[3].text = 'S Mod.'
+        for qname, mod, s, sm in items:
+            row = table.add_row().cells
+            row[0].text = qname
+            for m in mod:
+                row[1].text += f'{m}\n'
+            row[1].text = row[1].text.removesuffix('\n')
+            row[2].text = s
+            for m in sm:
+                row[3].text += f'{m}\n'
+            row[3].text = row[3].text.removesuffix('\n')
+        
+
+
+        doc.add_heading('Sides', level=1)
+
+        items = []
+        for d in orderData['sides']:
+            mods = []
+            sMods = []
+
+            for i in range(0, len(d['details'][1])):
+                modMod = modTypes[sides[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
+                modName = sides[d['details'][0]]['mod'][i]['name']
+                if(modName == "Hot" and modMod == "Normal"): continue
+                if(modName == "Onion" and modMod == "Yes"): mods.append(f'Plus {modName}'); continue
+                if(modName == "Onion" and modMod == "No"): continue
+                mods.append(f'{modMod} {modName}')
+
+            items.append((
+                f'{d['count']} {sides[d['details'][0]]['name']}', 
+                mods
+            ))
+
+        table = doc.add_table(rows=1, cols=2)
+        header = table.rows[0].cells
+        header[0].text = 'Qty&Name'
+        header[1].text = 'Mod.'
+        for qname, mod in items:
+            row = table.add_row().cells
+            row[0].text = qname
+            for m in mod:
+                row[1].text += f'{m}\n'
+            row[1].text = row[1].text.removesuffix('\n')
+        
+        doc.add_page_break()
+
+        doc.save(f'documents/orderReceipts/{orderNum}.docx')
+
+    finally:
+        if os.system(f'start documents/orderReceipts/"{orderNum}".docx') != 0:
+            messagebox.showerror("Error", "Cannot open receipt, file already open!", parent=parentTV)
 
 #############################################################################################################################
 #############################################################################################################################
@@ -968,7 +961,7 @@ def createOwnerViewCustomerOrdersToplevel(customer):
 
     for d in data:
         itemCount = sum([sum([i['count'] for i in v]) for v in json.loads(d[2]).values()])
-        treeview.insert("", END, values=[d[0], f"{itemCount} item{'s' if itemCount > 1 else ''}", "Yes" if d[3] else "No", "Yes" if d[4] else "No",  strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[5] + 1672531200)), strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[6] + 1672531200))])
+        treeview.insert("", END, values=[d[0], f"{itemCount} item{'s' if itemCount > 1 else ''}", "Yes" if d[3] else "No", "Yes" if d[4] else "No",  strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[5] + 1704067200)), strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[6] + 1704067200))])
         treeview.bind('<<TreeviewSelect>>', lambda event: orderSelected(event, orderTreeview))
     for c, h, w in zip(columns, headings, widths):
         treeview.column(c, anchor='center', width=w)
@@ -1056,6 +1049,35 @@ def orderSelected(event, tree):
 #############################################################################################################################
 #############################################################################################################################
 #############################################################################################################################
+
+def createOwnerManageEmployeesToplevel():
+    OwnerManageEmployees = Toplevel(root, bg='#000000')
+    OwnerManageEmployees.geometry('1230x500')
+    createText([OwnerManageEmployees], 1, 0, 4, "Manage Employees", "Calibri 35 bold")
+
+    columns = ("cid", "fn", "ln", "ak")
+    headings = ("Employee ID", "First Name", "Last Name", "Access Key")
+
+    treeview = ttk.Treeview(OwnerManageEmployees, columns=columns, show='headings', padding=1, selectmode='browse')
+    cursor.execute(f"SELECT * FROM employees")
+    data = cursor.fetchall()
+    for d in data:
+        treeview.insert("", END, values=d)
+    for c, h in zip(columns, headings):
+        treeview.heading(c, text=h)
+    treeview.grid(row = 3, column = 0, padx=10)
+    treeview.bind('<<TreeviewSelect>>', lambda event: employeeSelected(event, treeview))
+
+def employeeSelected(event, tree):
+    selected_items = event.widget.selection()
+    if selected_items:
+        item = selected_items[0]
+        record = event.widget.item(item)['values']
+        # do some stuff
+
+#############################################################################################################################
+#############################################################################################################################
+#############################################################################################################################
         
 def createOwnerReportsToplevel():
 
@@ -1072,13 +1094,12 @@ def createOwnerReportsToplevel():
     oListMonth = ["Whole Year"]
     UIElements = [[], [], []]
 
-    for y in range(2023, int(strftime("%Y")) + 1):
+    for y in range(2024, int(strftime("%Y")) + 1):
         oList.append(strftime("%Y", time.struct_time([y, 1, 1, 0, 0, 0, 0, 1, 0])))
 
     selectedPeriod = StringVar()
     selectedMonth = StringVar()
     selectedItemCat = StringVar()
-    selectedItem = StringVar()
 
     createDropdown([OwnerReports], 2, 0, 2, oList, selectedPeriod, "Calibri 20", "All Time")
 
@@ -1124,7 +1145,7 @@ def createOwnerReportsToplevel():
     itemCatChanged()
     
     # # Document generation for sold food items
-    # def generateSoldFoodItemsReport(timeMin = 0, timeMax = 1672531200):
+    # def generateSoldFoodItemsReport(timeMin = 0, timeMax = 1704067200):
     #     doc = Document()
     #     doc.add_heading('Sold Food Items', 0)
 
@@ -1190,13 +1211,128 @@ def createOwnerReportsToplevel():
     #     except PermissionError:
     #         messagebox.showerror("Error", "File already open!\nPlease close the active report file to update the details", parent=OwnerReports)
     
+    def generateSoldFoodItemsGraph():
+        title, timeRange = graphTitle()
+
+        title = f"{selectedItemCat.get()}\n{title}"
+                   
+        graphData = {}
+
+        for i in list(cat[0].values()):
+            graphData.update({i['name']: 0})
+
+        curTimeCheck = timeRange[0]
+        while curTimeCheck < timeRange[1]:
+            curTime = time.localtime(curTimeCheck)
+            timeNext = curTime
+            timeNext = time.struct_time([timeNext.tm_year, timeNext.tm_mon + 1, *timeNext[2:9]])
+            curTimeCheck = time.mktime(timeNext)
+
+            cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {time.mktime(curTime)} AND placementTime < {time.mktime(timeNext)}""")
+            data = cursor.fetchall()
+        
+            for dat in data:
+                d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))[selectedItemCat.get().lower()]
+                for i in d:
+                    try:
+                        graphData[cat[0][i['details'][0]]['name']] += i['count']
+                    except IndexError:
+                        graphData[cat[0][i['details'][0]]['name']].append(i['count'])
+                    
+        plotBarChart(title, "Item", "Qty Sold", graphData)
+
+    def generateItemTrendGraph():
+        title, timeRange = graphTitle()
+
+        title = f"{selectedItemCat.get()}\n{title}"
+                   
+        graphData = {}
+        xLabels = []
+
+        for i in list(cat[0].values()):
+            graphData.update({i['name']: [0 for i in range(0, 12)]})
+
+        curTimeCheck = timeRange[0]
+        m = 0
+        while curTimeCheck < timeRange[1]:
+            curTime = time.localtime(curTimeCheck)
+            xLabels.append(f'{strftime("%b, %Y", time.localtime(curTimeCheck + 1704067200))}')
+            timeNext = curTime
+            temp = [timeNext.tm_year, timeNext.tm_mon + 1, 2, 0, 0, 0, *timeNext[6:9]]
+            timeNext = time.struct_time(temp)
+            curTimeCheck = time.mktime(timeNext)
+
+            cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {time.mktime(curTime)} AND placementTime < {time.mktime(timeNext)}""")
+            data = cursor.fetchall()
+
+            for dat in data:
+                d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))[selectedItemCat.get().lower()]
+                for i in d:
+                    graphData[cat[0][i['details'][0]]['name']][m] += i['count']
+            m = m + 1
+        plotLineChart(title, "Month, Year", "Qty Sold", graphData, xLabels)
+
+    def plotBarChart(graphName: str, xName: str, yName: str, data: dict):
+        import matplotlib.pyplot as mpl
+        
+        fig = mpl.figure(figsize=(14.0, 8.0))
+        graph = fig.subplots()
+        #graph = mpl.figure(figsize=(8.0, 4.5))
+
+        count = 0
+        for k, v in data.items():
+            if(v) != 0:
+                graph.bar(truncateText(k, math.floor(25-(1.3 * len(data.items())))), v, 0.9).set_label(k)
+                count += 1
+        
+        graph.set_xlabel(xName)
+        graph.set_ylabel(yName)
+        graph.set_title(graphName)
+        graph.set_xlim(0.6)
+        graph.axis([-0.6, count, 0, max([i for i in data.values()]) + 1])
+
+        try:
+            graph.set_yticks([y for y in range(0, max([i for i in data.values()]) + 1)])
+            # Show the legend
+            graph.legend()
+            
+            # Show the plot in a separate window
+            mpl.show()
+        except ValueError:
+            messagebox.showerror("Error", "No items in category for given time range", parent=OwnerReports)
+
+    def plotLineChart(graphName: str, xName: str, yName: str, data: dict, xLabels: list[str]):
+        import matplotlib.pyplot as mpl
+        
+        fig = mpl.figure(figsize=(14.0, 8.0))
+        graph = fig.subplots()
 
 
-    def generateSoldFoodItemsGraph(item: str):
-        title = ""
-                
+        count = 0
+        for k, v in data.items():
+            mpl.plot([i for i in range(0, len(v))], v, label=k)
+            count += 1
+        
+        graph.set_xlabel(xName)
+        graph.set_ylabel(yName)
+        graph.set_title(graphName)
+        graph.set_xlim(0.6)
+        graph.axis([0, count, 0, max([max([0, *i]) for i in data.values()]) + 1])
+
+        try:
+            graph.set_xticks([i for i in range(0, len(xLabels))], xLabels)
+            graph.set_yticks([y for y in range(0, max([max([0, *i]) for i in data.values()]) + 1)])
+            # Show the legend
+            graph.legend()
+            
+            # Show the plot in a separate window
+            mpl.show()
+        except ValueError:
+            messagebox.showerror("Error", "No items in category for given time range", parent=OwnerReports)
+    
+    def graphTitle():
         monYr = time.localtime()
-        timeRange = [0.0, 1672531200.0]
+        timeRange = [0, time.time() - 1704067200]
         match(selectedPeriod.get()):
             case("Current Month"):
                 timeRange = [monthToTime(monYr.tm_mon, monYr.tm_year), monthToTime(monYr.tm_mon + 1, monYr.tm_year)]
@@ -1208,98 +1344,21 @@ def createOwnerReportsToplevel():
                 title = f"All current data"
             case(_):
                 if(selectedMonth.get() == "Whole Year"):
-                    timeRange = [monthToTime(1, selectedPeriod.get()), monthToTime(1, int(selectedPeriod.get()) + 1)]
-                    title = f"For the year of {strftime("%Y", time.localtime(timeRange[0] + 1672531200))}"
+                    timeRange = [monthToTime(1, selectedPeriod.get()), monthToTime(1, int(selectedPeriod.get()) + 1) - 86400]
+                    if(int(selectedPeriod.get()) == int(strftime("%Y"))):
+                        title = f"For the year of {strftime("%Y", time.localtime(timeRange[0] + 1704067200))}\nAs of the {ordinal(int(strftime("%d")))} of {strftime("%B")}"
+                    else:
+                        title = f"For the year of {strftime("%Y", time.localtime(timeRange[0] + 1704067200))}"
                 else:
                     timeRange = [monthToTime(indexFromVal(months, selectedMonth.get()) + 1, selectedPeriod.get()), monthToTime(indexFromVal(months, selectedMonth.get()) + 2, selectedPeriod.get())]
-                    title = f"For the month of {strftime("%B, %Y", time.localtime(timeRange[0] + 1672531200))}"
-
-        title = f"{selectedItemCat.get()}\n{title}"
-                   
-        graphData = []
-
-        curTimeCheck = timeRange[0]
-        while curTimeCheck < timeRange[1]:
-            curTime = time.localtime(curTimeCheck)
-            timeNext = curTime
-            timeNext = time.struct_time([timeNext.tm_year, timeNext.tm_mon + 1, *timeNext[2:9]])
-            curTimeCheck = time.mktime(timeNext)
-
-            cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {time.mktime(curTime)} AND placementTime < {time.mktime(timeNext)}""")
-            data = cursor.fetchall()
-            
-            for i in list(cat[0].values()):
-                graphData.append([i['name'], 0])
-
-            for dat in data:
-                d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))[selectedItemCat.get().lower()]
-                for i in d:
-                    graphData[indexFromVal(graphData, f'\'{cat[0][i['details'][0]]['name']}\'')][1] += i['count']
-                    #graphData.append([strftime("%b, %Y", curTime), count])
-                #graphData.append([cat[0][keyFromVal(cat[0], selectedItem.get())]['name'], count])
-
-
-            ###
-
-        # cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {timeRange[0]} AND placementTime < {timeRange[1]}""")
-        # data = cursor.fetchall()
-        # app = [[o['name'], 0] for o in appetisers.values()]
-        # bao = [[o['name'], 0] for o in baos.values()]
-        # ben = [[o['name'], 0] for o in bentos.values()]
-        # beS = [[o['name'], 0] for o in bentoSides.values()]
-        # #cla = [[o['name'], 0] for o in classics.values()]
-        # #sid = [[o['name'], 0] for o in sides.values()]
-        
-        # for dat in data:
-        #     d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))
-        #     for a in d['appetisers']:
-        #         app[a['details'][0] - 1][1] += a['count']
-        #     for b in d['baos']:
-        #         bao[b['details'][0] - 1][1] += b['count']
-        #     for b in d['bentos']:
-        #         ben[b['details'][0] - 1][1] += b['count']
-        #     for c in d['classics']:
-        #         pass
-        #     for s in d['sides']:
-        #         pass
-
-        plotBarChart(title, "Item", "Qty Sold", graphData)
-
-    def plotBarChart(graphName: str, xName: str, yName: str, data: list[list]):
-        import matplotlib.pyplot as mpl
-        
-        fig = mpl.figure(figsize=(14.0, 8.0))
-        graph = fig.subplots()
-        #graph = mpl.figure(figsize=(8.0, 4.5))
-
-        count = 0
-        for i in data:
-            if(i[1]) != 0:
-                b = graph.bar(truncateText(i[0], 10), i[1], 0.9).set_label(i[0])
-                count += 1
-        
-        graph.set_xlabel(xName)
-        graph.set_ylabel(yName)
-        graph.set_title(graphName)
-        graph.set_xlim(0.6)
-        graph.axis([-0.6, count, 0, max([i[1] for i in data]) + 1])
-
-        try:
-            graph.set_yticks([y for y in range(0, max([i[1] for i in data]) + 1)])
-            # Show the legend
-            graph.legend()
-            
-            # Show the plot in a separate window
-            mpl.show()
-        except ValueError:
-            messagebox.showerror("Error", "No items in category for given time range", parent=OwnerReports)
+                    title = f"For the month of {strftime("%B, %Y", time.localtime(timeRange[0] + 1704067200))}"
+        return title, timeRange
         
 
-    #plotBarChart("Test", "X", "Y", [["Thing", 1], ["Thing2", 2], ["Thing3", 3]])
 
     # createButton([OwnerReports], 4, 0, 2, "Sold Food Items - Quantities", lambda:generateSoldFoodItemsReport(), "Calibri 20", width=30)
-    createButton([OwnerReports], 5, 0, 2, "Sold Food Items", lambda:generateSoldFoodItemsGraph(selectedItem.get()), "Calibri 20", width=30)
-    #createButton([OwnerReports], 6, 0, 2, "Sold Food Items - Item by Catgeory", lambda:generateSoldFoodItemsGraph(), "Calibri 20")
+    createButton([OwnerReports], 5, 0, 2, "Sold Food Items", lambda:generateSoldFoodItemsGraph(), "Calibri 20", width=30)
+    createButton([OwnerReports], 6, 0, 2, "Item Trends", lambda:generateItemTrendGraph(), "Calibri 20", width=30)
 
 #############################################################################################################################
 #############################################################################################################################
@@ -1324,15 +1383,16 @@ def monthToTime(month: int or str, year: int or str):
         y = year
     else:
         y = int(year)
-    return time.mktime(time.struct_time([y, m, 1, 1, 0, 0, 0, 1, 0])) - 1672531200
+    return time.mktime(time.struct_time([y, m, 1, 1, 0, 0, 0, 1, 0])) - 1704067200
     
 months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 def truncateText(text: str, length: int):
     if(len(text) <= length + 1):
         return text
-    else:
-        return f'{text[0:length]}...'
+    if(text[length-1]) == ' ':
+        return f'{text[0:length-1]}...'
+    return f'{text[0:length]}...'
 
 def closedWindow(frame):
     global selectedOrder

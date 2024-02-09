@@ -38,9 +38,9 @@ def addCustomer(firstName: str, lastName: str, number: str, email: str, password
             messagebox.showerror("Error", f"{v[1]} is too long, must be less than {v[2]} characters")
             return False
 
-    # Generate an ID as milliseconds since Jan 1 2023, 00:00 UTC+0
+    # Generate an ID as milliseconds since Jan 1 2024, 00:00 UTC+0
     # This may not work on older devices if they do not support milliseconds
-    id = int(time.time() * 1000 - 1672531200000)
+    id = int(time.time() * 1000 - 1704067200000)
 
     # Attempt to add the customer
     cursor.execute(f"""

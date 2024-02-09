@@ -280,14 +280,17 @@ class Order():
     def delItem(self, type: str, index: int):
         self.content[type].pop(index)
 
-    def returnOrder(self):
+    def getOrderContent(self):
         return self.content
+
+    def returnOrder(self):
+        return f"{int(time.time() * 1000 - 1704067200000)}, {self.customerID}, '{str(self.content).replace("'", '"')}', 0, 0, {int(time.time() - 1704067200)}"
 
     def completeOrder(self, pickupTime: int, note: str):
         cursor.execute(f"""
             INSERT INTO orders (orderID, customerID_FK, orderData, complete, paid, placementTime, pickupTime, note)
             VALUES
-            ({int(time.time() * 1000 - 1672531200000)}, {self.customerID}, '{str(self.content).replace("'", '"')}', 0, 0, {int(time.time() - 1672531200)}, {pickupTime}, '{note}')
+            ({self.returnOrder()}, {pickupTime}, '{note}')
         """)
         db.commit()
 
@@ -319,9 +322,9 @@ o = Order()
 o.assignCustomer(1)
 # o.addItem(Bao(1, 1, 2, 1, [0, 2, 3, 2, 2], ""))
 # o.addItem(Bao(1, 1, 2, 1, [1, 0, 1, 1, 0], ""))
-# o.completeOrder(1672531200)
+# o.completeOrder(1704067200)
 # o.addItem(Bento(1, 1, [1, 1, 3 ], 1, [     ], 3, [ 2, 0             ], 1, 0, ""))
 # print(Classic(1, 1, [2, 0,], 2, [1, 1], "").outputPretty())
 # print(Bento(1, 2, [2, 2, 2, 2, 1], 5, [], 6, [1, 1, 1, 1, 1], 0, 1, '').outputPretty())
 
-# o.completeOrder(1672531200, "")
+# o.completeOrder(1704067200, "")
