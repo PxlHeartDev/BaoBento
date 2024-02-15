@@ -33,13 +33,15 @@ hot =           {'name': 'Hot',             'modType': 3, 'default': 1}
 hotCurry =      {'name': 'Hot',             'modType': 4, 'default': 1}
 pepper =        {'name': 'Pepper',          'modType': 1, 'default': 2}
 onion =        [{'name': 'Onion',           'modType': 1, 'default': 2}, {'name': 'Onion', 'modType': 2, 'default': 0}]
+carrot =        {'name': 'Carrot',          'modType': 1, 'default': 2}
+pineapple =     {'name': 'Pineapple',       'modType': 1, 'default': 2}
 beanSprout =    {'name': 'Bean Sprouts',    'modType': 1, 'default': 2}
 chicken =       {'name': 'Chicken',         'modType': 1, 'default': 2}
 pork =          {'name': 'Pork',            'modType': 1, 'default': 2}
 egg =           {'name': 'Egg',             'modType': 1, 'default': 2}
 wellDone =      {'name': 'Well done',       'modType': 2, 'default': 0}
 lemon =         {'name': 'Lemon',           'modType': 2, 'default': 1}
-peas = [{'name': 'Peas', 'modType': 1, 'default': 0}, {'name': 'Peas', 'modType': 1, 'default': 2}]
+peas =         [{'name': 'Peas', 'modType': 1, 'default': 0}, {'name': 'Peas', 'modType': 1, 'default': 2}]
 pickles = [
     {'name': 'White Cabbage', 'modType': 2, 'default': 1}, 
     {'name': 'Cucumber', 'modType': 2, 'default': 1}, 
@@ -133,14 +135,16 @@ class Bao:
 
 bentoPermittedSauces = [0, 4, 10, 11, 12]
 bentos = {
-    1: {'name': 'Salt & Chilli Chicken',    'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },
-    2: {'name': 'Peking Chicken',           'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },
-    3: {'name': 'Sriracha Noodles',         'price': 9.30, 'mod': [pepper, onion[0], pork, chicken, hot],  'sauce': -1, 'sauceMod': 1, 'side1': [5, []], 'side2': [6, [1, 1, 1, 1, 1]], },
-    4: {'name': 'Teriyaki Noodles',         'price': 9.30, 'mod': [pepper, onion[0], chicken],             'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [6, [1, 1, 1, 1, 0]], },
-    5: {'name': 'Honey Beef',               'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },      
-    6: {'name': 'Katsu Chicken',            'price': 9.30, 'mod': [pickles[0]],                         'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },
-    7: {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                         'sauce': 10, 'sauceMod': 1, 'side1': [5, []], 'side2': [2, []] },
-    8: {'name': 'Squid',                    'price': 9.80, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], }
+    1:  {'name': 'Salt & Chilli Chicken',    'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },   
+    2:  {'name': 'Honey Chilli Chicken',     'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },     
+    3:  {'name': 'Peking Chicken',           'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },
+    4:  {'name': 'Honey Beef',               'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], }, 
+    5:  {'name': 'Peking Beef',              'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], }, 
+    6:  {'name': 'Sriracha Noodles',         'price': 9.30, 'mod': [pepper, onion[0], pork, chicken, hot],  'sauce': -1, 'sauceMod': 1, 'side1': [5, []], 'side2': [6, [1, 1, 1, 1, 1]], },
+    7:  {'name': 'Teriyaki Noodles',         'price': 9.30, 'mod': [carrot, beanSprout, onion[0], peas[1]],    'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [6, [1, 1, 1, 1, 0]], },
+    8:  {'name': 'Katsu Chicken',            'price': 9.30, 'mod': [pickles[0]],                            'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },
+    9:  {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                            'sauce': 10, 'sauceMod': 1, 'side1': [5, []], 'side2': [2, []] },
+    10: {'name': 'Squid',                    'price': 9.80, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], }
 }
 bentoSides = {
     1: {'name': 'Spring Rolls', 'mod': [], },
@@ -152,7 +156,7 @@ bentoSides = {
 }
 
 class Bento():
-    def __init__(self, count: int, main: int, mainMod: [int], side1: int, side1Mod: [int], side2: int, side2Mod: [int], sauce: int, sauceMod: [int], note: str):
+    def __init__(self, count: int, main: int, mainMod: list[int], side1: int, side1Mod: list[int], side2: int, side2Mod: list[int], sauce: int, sauceMod: list[int], note: str):
         self.type = "bentos"
         self.count = count
         self.main = main
@@ -191,15 +195,18 @@ class Bento():
 
 
 classics = {
-    1: {'name': 'Sweet & Sour Chicken', 'price': 7.80, 'mod': [pepper, onion[0]],          'side': 1},
-    2: {'name': 'Honey Chilli Chicken', 'price': 8.20, 'mod': [pepper, onion[0], hot],     'side': 1},
-    3: {'name': 'Peking Chicken',       'price': 8.20, 'mod': [pepper, onion[0]],          'side': 1},
-    4: {'name': 'Honey Chilli Beef',    'price': 8.20, 'mod': [pepper, onion[0], hot],     'side': 1},
-    5: {'name': 'Peking Beef',          'price': 8.20, 'mod': [pepper, onion[0]],          'side': 1},
-    6: {'name': 'Black Bean Chicken',   'price': 7.80, 'mod': [pepper, onion[0], hot],     'side': 1},
-    7: {'name': 'Chicken Curry',        'price': 7.80, 'mod': [onion[0], peas[1], hot],    'side': 1},
-    8: {'name': 'Veggie Curry',         'price': 7.80, 'mod': [pepper, onion[0], peas[1], beanSprout, hot], 'side': 1},
-    9: {'name': 'Satay Chicken',        'price': 7.80, 'mod': [pepper, onion[0], hot],     'side': 1}
+    1:  {'name': 'Sweet & Sour Chicken', 'price': 7.80, 'mod': [pepper, onion[0], pineapple], 'side': 1},
+    2:  {'name': 'Honey Chilli Chicken', 'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1},
+    3:  {'name': 'Peking Chicken',       'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1},
+    4:  {'name': 'Honey Chilli Beef',    'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1},
+    5:  {'name': 'Peking Beef',          'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1},
+    6:  {'name': 'Black Bean Chicken',   'price': 7.80, 'mod': [pepper, onion[0], hot],       'side': 1},
+    7:  {'name': 'Chicken Curry',        'price': 7.80, 'mod': [onion[0], peas[1], hot],      'side': 1},
+    8:  {'name': 'Chicken Fried Rice',   'price': 7.80, 'mod': [egg, peas[1]],                'side': -1},
+    9:  {'name': 'Veggie Curry',         'price': 7.80, 'mod': [pepper, onion[0], peas[1], beanSprout, hot], 'side': 1},
+    10: {'name': 'Satay Chicken',        'price': 7.80, 'mod': [pepper, onion[0], carrot, hot],              'side': -1},
+    11: {'name': 'Sriracha Noodle',      'price': 7.80, 'mod': [pepper, onion[0], pork, chicken, hot],       'side': -1},
+    12: {'name': 'Teriyaki Noodle',      'price': 7.80, 'mod': [carrot, beanSprout, onion[0], peas[1]],      'side': -1},
 }
 
 classicSides = {

@@ -1107,14 +1107,14 @@ def createOwnerReportsToplevel():
     UIElements[1].clear()
     oListItemCats = ["Appetisers", "Baos", "Bentos", "Classics", "Sides"]
     UIElements[1].append(createDropdown([OwnerReports], 5, 2, 1, oListItemCats, selectedItemCat, "Calibri 20", "Appetisers"))
+    UIElements[1].append(createText([OwnerReports], 6, 2, 1, "Note: Generating an item trend graph for a specific\nmonth won't yield particularly useful results", "Calibri 15"))
 
-    #time.strftime("")
     def periodChanged(*args):
         [e.destroy() for e in UIElements[0]]
         UIElements[0].clear()
-        oListMonth = ["Whole Year"]
         if(selectedPeriod.get() in ["All Time", "Current Month", "Current Year"]):
             return
+        oListMonth = ["Whole Year"]
         if(int(strftime("%Y")) > int(selectedPeriod.get())): r = 13
         else: r = int(strftime("%m"))
         for m in range(1, r):
@@ -1308,10 +1308,10 @@ def createOwnerReportsToplevel():
         graph = fig.subplots()
 
 
-        count = 0
+        count = (len(list(data.values())))/-150
         for k, v in data.items():
-            mpl.plot([i for i in range(0, len(v))], v, label=k)
-            count += 1
+            mpl.plot([i for i in range(0, len(v))], [adj + count for adj in v], label=k)
+            count += 1/75
         
         graph.set_xlabel(xName)
         graph.set_ylabel(yName)
