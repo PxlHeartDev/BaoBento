@@ -368,9 +368,6 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                     UIElements[0].append(createText([OwnerAddItem], 10, 0, 2, "Side 1: "))
                     UIElements[0].append(createDropdown([OwnerAddItem], 11, 1, 1, oListBento, bentoSideSelected[0], "Calibri 15 bold", bentoSides[bentoStuff['side1'][0]]['name'], 24))
                     
-                    oListBento.clear()
-                    for a in bentoSides.values():
-                        oListBento.append(a['name'])
                     UIElements[0].append(createText([OwnerAddItem], 20, 0, 2, "Side 2: "))
                     UIElements[0].append(createDropdown([OwnerAddItem], 21, 1, 1, oListBento, bentoSideSelected[1], "Calibri 15 bold", bentoSides[bentoStuff['side2'][0]]['name'], 24))
 

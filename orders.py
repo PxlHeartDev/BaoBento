@@ -17,16 +17,16 @@ modTypes = {
 sauceDict = {
     -1: "",
     0: "No sauce",
-    1: "Sweet Chilli Sauce",
-    2: "Micro Curry",
-    3: "Small Curry",
-    4: "Curry",
-    5: "Soy Sauce",
-    6: "Mayo",
-    7: "Spicy Mayo",
-    8: "Hoisin Mayo",
-    9: "Vegan Mayo",
-    10: "Korean Sauce",
+    1: "Sweet Chilli Sauce [Vgn]",
+    2: "Micro Curry [Veg]",
+    3: "Small Curry [Veg]",
+    4: "Curry [Veg]",
+    5: "Soy Sauce [Vgn]",
+    6: "Mayo [Veg]",
+    7: "Spicy Mayo [Veg]",
+    8: "Hoisin Mayo [Veg]",
+    9: "Vegan Mayo [Vgn]",
+    10: "Korean Sauce [Vgn]",
     11: "Peking Sauce",
     12: "Sweet and Sour Sauce"
 }
@@ -57,16 +57,16 @@ pickles = [
 
 appetiserPermittedSauces = [0, 1, 2, 5]
 appetisers = {
-    1:  {'name': 'Spring Rolls',            'price': 4.00,  'mod': [],   'defaultSauce': 1,  'veg': 0, 'desc': "Shredded duck and veg in delicious Korean sauce wrapped in a crispy egg sheet"},
-    2:  {'name': 'Thai Spring Rolls',       'price': 4.00,  'mod': [],   'defaultSauce': 1,  'veg': 1, 'desc': "Noodle, mushroom, and veg wrapped in a crispy egg sheet"},
-    3:  {'name': 'Teriyaki Wings',          'price': 6.00,  'mod': [],   'defaultSauce': -1, 'veg': 0, 'desc': "Deep fried chicken wings slathered in a delicious teriyaki sauce"},
-    4:  {'name': 'Korean Wings',            'price': 6.00,  'mod': [],   'defaultSauce': -1, 'veg': 0, 'desc': "Deep fried chicken wings coated in a spicy Korean sauce"},
-    5:  {'name': 'Thai Prawn Crackers',     'price': 3.50,  'mod': [],   'defaultSauce': -1, 'veg': 2, 'desc': "A big bag of crispy, flavourful thai prawn crackers"},
-    6:  {'name': 'Gyoza',                   'price': 7.00,  'mod': [wellDone],              'defaultSauce': 5,  'veg': 0, 'desc': "Delectable homemade gyoza dumplings"},
-    7:  {'name': 'Honey Ribs',              'price': 7.00,  'mod': [wellDone, lemon],       'defaultSauce': -1, 'veg': 0, 'desc': "Pork ribs doused with honey with a sliced lemon"},
-    8:  {'name': 'Peking Ribs',             'price': 7.00,  'mod': [wellDone],              'defaultSauce': -1, 'veg': 0, 'desc': "Pork ribs covered with a hot and spicy peking sauce"},
-    9:  {'name': 'Salted Chilli Chicken',   'price': 6.00,  'mod': [pepper, onion[0], hot], 'defaultSauce': -1, 'veg': 0, 'desc': "Crispy shredded chicken with sliced pepper and onion, all mixed with spicy salt and chilli flakes"},
-    10: {'name': 'Spice Bowl',              'price': 6.50,  'mod': [pepper, onion[0], hot], 'defaultSauce': 3,  'veg': 0, 'desc': "A bowl of spicy potato wedges, popcorn chicken, and chicken chunks with a helping of sliced pepper and onion"},
+    1:  {'name': 'Spring Rolls',              'price': 4.00,  'mod': [],   'defaultSauce': 1,  'desc': "Shredded duck and veg in delicious Korean sauce wrapped in a crispy egg sheet"},
+    2:  {'name': 'Thai Spring Rolls [Veg]',   'price': 4.00,  'mod': [],   'defaultSauce': 1,  'desc': "Noodle, mushroom, and veg wrapped in a crispy egg sheet"},
+    3:  {'name': 'Teriyaki Wings',            'price': 6.00,  'mod': [],   'defaultSauce': -1, 'desc': "Deep fried chicken wings slathered in a delicious teriyaki sauce"},
+    4:  {'name': 'Korean Wings',              'price': 6.00,  'mod': [],   'defaultSauce': -1, 'desc': "Deep fried chicken wings coated in a spicy Korean sauce"},
+    5:  {'name': 'Thai Prawn Crackers [Vgn]', 'price': 3.50,  'mod': [],   'defaultSauce': -1, 'desc': "A big bag of crispy, flavourful thai prawn crackers"},
+    6:  {'name': 'Gyoza',                     'price': 7.00,  'mod': [wellDone],              'defaultSauce': 5,  'desc': "Delectable homemade gyoza dumplings"},
+    7:  {'name': 'Honey Ribs',                'price': 7.00,  'mod': [wellDone, lemon],       'defaultSauce': -1, 'desc': "Pork ribs doused with honey with a sliced lemon"},
+    8:  {'name': 'Peking Ribs',               'price': 7.00,  'mod': [wellDone],              'defaultSauce': -1, 'desc': "Pork ribs covered with a hot and spicy peking sauce"},
+    9:  {'name': 'Salted Chilli Chicken',     'price': 6.00,  'mod': [pepper, onion[0], hot], 'defaultSauce': -1, 'desc': "Crispy shredded chicken with sliced pepper and onion, all mixed with spicy salt and chilli flakes"},
+    10: {'name': 'Spice Bowl',                'price': 6.50,  'mod': [pepper, onion[0], hot], 'defaultSauce': 3,  'desc': "A bowl of spicy potato wedges, popcorn chicken, and chicken chunks with a helping of sliced pepper and onion"},
 }
 
 class Appetiser:
@@ -101,12 +101,12 @@ picklesDict = {
 }
 
 baos = {
-    1: {'name': 'Chicken',   'price': 7.50, 'pickles': [2, 0, 2, 2, 0], 'sauce': 7, 'veg': 0, 'desc': "2 salted chilli chicken baos with spicy mayo"},
-    2: {'name': 'Duck',      'price': 8.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 8, 'veg': 0, 'desc': "2 aromatic duck confit baos with tangy hoisin sauce and sweet hoisin mayo"},
-    3: {'name': 'Rib',       'price': 7.50, 'pickles': [0, 2, 2, 2, 0], 'sauce': 8, 'veg': 0, 'desc': "2 pulled slow cooked rib baos with sweet tangy peking sauce and sweet hoisin mayo"},
-    4: {'name': 'Pork',      'price': 7.50, 'pickles': [0, 2, 2, 2, 2], 'sauce': 8, 'veg': 0, 'desc': "2 baos of tender braised pork in a delicious tangy sauce with sweet hoisin mayo"},
-    5: {'name': 'Veggie',    'price': 7.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 7, 'veg': 1, 'desc': "2 tempura sweet potato baos with spicy mayo"},
-    6: {'name': 'Vegan',     'price': 7.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 9, 'veg': 2, 'desc': "2 baos of pulled jackfruit marinated in a classic Chinese bbq sauce with vegan hoisin mayo"},
+    1: {'name': 'Chicken',   'price': 7.50, 'pickles': [2, 0, 2, 2, 0], 'sauce': 7, 'desc': "2 salted chilli chicken baos with spicy mayo"},
+    2: {'name': 'Duck',      'price': 8.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 8, 'desc': "2 aromatic duck confit baos with tangy hoisin sauce and sweet hoisin mayo"},
+    3: {'name': 'Rib',       'price': 7.50, 'pickles': [0, 2, 2, 2, 0], 'sauce': 8, 'desc': "2 pulled slow cooked rib baos with sweet tangy peking sauce and sweet hoisin mayo"},
+    4: {'name': 'Pork',      'price': 7.50, 'pickles': [0, 2, 2, 2, 2], 'sauce': 8, 'desc': "2 baos of tender braised pork in a delicious tangy sauce with sweet hoisin mayo"},
+    5: {'name': 'Veggie [Veg]',    'price': 7.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 7, 'desc': "2 tempura sweet potato baos with spicy mayo"},
+    6: {'name': 'Vegan [Vgn]',     'price': 7.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 9, 'desc': "2 baos of pulled jackfruit marinated in a classic Chinese bbq sauce with vegan hoisin mayo"},
 }
 
 class Bao:
@@ -138,24 +138,24 @@ class Bao:
 
 bentoPermittedSauces = [0, 4, 10, 11, 12]
 bentos = {
-    1:  {'name': 'Salted Chilli Chicken',    'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Crispy shredded chicken with sliced pepper and onion, all mixed with spicy salt and chilli flakes"},   
-    2:  {'name': 'Honey Chilli Chicken',     'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Shredded chicken with sliced pepper and onion tossed in our sweet chilli sauce"},     
-    3:  {'name': 'Peking Chicken',           'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Shredded chicken with sliced pepper and onion coated with a sweet and tangy peking sauce"},
-    4:  {'name': 'Honey Beef',               'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Triple cooked shredded beef with sliced pepper and onion tossed in our sweet chilli sauce"}, 
-    5:  {'name': 'Peking Beef',              'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Tripled cooked shredded beef with sliced pepper and onion coated with a sweet and tangy peking sauce"}, 
-    6:  {'name': 'Sriracha Noodles',         'price': 9.30, 'mod': [pepper, onion[0], pork, chicken, hot],  'sauce': -1, 'sauceMod': 1, 'side1': [5, []], 'side2': [6, [1, 1, 1, 1, 1]], 'veg': 0, 'desc': "Noodles with Chinese bbq pork and chicken tossed in a spicy Thai sriracha sauce"},
-    7:  {'name': 'Teriyaki Noodles',         'price': 9.30, 'mod': [carrot, beanSprout, onion[0], peas[1]], 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [6, [1, 1, 1, 1, 0]], 'veg': 1, 'desc': "Thicker noodles with carrot and beansprouts tossed in a tangy teriyaki sauce"},
-    8:  {'name': 'Katsu Chicken',            'price': 9.30, 'mod': [pickles[0]],                            'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Panko fried chicken breast on a bed of white cabbage"},
-    9:  {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                            'sauce': 10, 'sauceMod': 1, 'side1': [5, []], 'side2': [2, []], 'veg': 0, 'desc': "Spicy, crispy fried chicken strips on a bed of white cabbage"},
-    10: {'name': 'Squid',                    'price': 9.80, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Breaded shredded squid with sliced pepper and onion, all mixed with spicy salt and chilli flakes"}
+    1:  {'name': 'Salted Chilli Chicken',    'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Crispy shredded chicken with sliced pepper and onion, all mixed with spicy salt and chilli flakes"},   
+    2:  {'name': 'Honey Chilli Chicken',     'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Shredded chicken with sliced pepper and onion tossed in our sweet chilli sauce"},     
+    3:  {'name': 'Peking Chicken',           'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Shredded chicken with sliced pepper and onion coated with a sweet and tangy peking sauce"},
+    4:  {'name': 'Honey Beef',               'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Triple cooked shredded beef with sliced pepper and onion tossed in our sweet chilli sauce"}, 
+    5:  {'name': 'Peking Beef',              'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Tripled cooked shredded beef with sliced pepper and onion coated with a sweet and tangy peking sauce"}, 
+    6:  {'name': 'Sriracha Noodles',         'price': 9.30, 'mod': [pepper, onion[0], pork, chicken, hot],  'sauce': -1, 'sauceMod': 1, 'side1': [5, []], 'side2': [6, [1, 1, 1, 1, 1]], 'desc': "Noodles with Chinese bbq pork and chicken tossed in a spicy Thai sriracha sauce"},
+    7:  {'name': 'Teriyaki Noodles [Veg]',   'price': 9.30, 'mod': [carrot, beanSprout, onion[0], peas[1]], 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [6, [1, 1, 1, 1, 0]], 'desc': "Thicker noodles with carrot and beansprouts tossed in a tangy teriyaki sauce"},
+    8:  {'name': 'Katsu Chicken',            'price': 9.30, 'mod': [pickles[0]],                            'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Panko fried chicken breast on a bed of white cabbage"},
+    9:  {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                            'sauce': 10, 'sauceMod': 1, 'side1': [5, []], 'side2': [2, []], 'desc': "Spicy, crispy fried chicken strips on a bed of white cabbage"},
+    10: {'name': 'Squid',                    'price': 9.80, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Breaded shredded squid with sliced pepper and onion, all mixed with spicy salt and chilli flakes"}
 }
 bentoSides = {
-    1: {'name': 'Spring Rolls', 'mod': [], },
-    2: {'name': 'Steamed Rice', 'mod': [], },
-    3: {'name': 'Fried Rice',   'mod': [egg, peas[0]], },
-    4: {'name': 'Noodles',      'mod': [chicken, onion[0], beanSprout], },
-    5: {'name': 'Hot Wings',    'mod': [], },
-    6: {'name': 'Pickles',      'mod': pickles[0:5], }
+    1: {'name': 'Spring Rolls',         'mod': []},
+    2: {'name': 'Steamed Rice [Vgn]',   'mod': []},
+    3: {'name': 'Fried Rice [Veg]',     'mod': [egg, peas[0]]},
+    4: {'name': 'Noodles',              'mod': [chicken, onion[0], beanSprout]},
+    5: {'name': 'Hot Wings',            'mod': []},
+    6: {'name': 'Pickles [Vgn]',        'mod': pickles[0:5]}
 }
 
 class Bento():
@@ -198,25 +198,25 @@ class Bento():
 
 
 classics = {
-    1:  {'name': 'Sweet & Sour Chicken', 'price': 7.80, 'mod': [pepper, onion[0], pineapple], 'side': 1,  'veg': 0, 'desc': "Crispy fried chicken chunks coated with a delicious sweet & sour sauce with sliced pepper, onion, and pineapple"},
-    2:  {'name': 'Honey Chilli Chicken', 'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1,  'veg': 0, 'desc': "Shredded chicken with sliced pepper and onion tossed in our sweet chilli sauce"},     
-    3:  {'name': 'Peking Chicken',       'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1,  'veg': 0, 'desc': "Shredded chicken with sliced pepper and onion coated with a sweet and tangy peking sauce"},
-    4:  {'name': 'Honey Chilli Beef',    'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1,  'veg': 0, 'desc': "Triple cooked shredded beef with sliced pepper and onion tossed in our sweet chilli sauce"}, 
-    5:  {'name': 'Peking Beef',          'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1,  'veg': 0, 'desc': "Triple cooked shredded beef with sliced pepper and onion coated with a sweet and tangy peking sauce"},
-    6:  {'name': 'Black Bean Chicken',   'price': 7.80, 'mod': [pepper, onion[0], hot],       'side': 1,  'veg': 0, 'desc': "Pieces of chicken in a rich black bean saucec with a hint of chilli"},
-    7:  {'name': 'Chicken Fried Rice',   'price': 7.80, 'mod': [egg, peas[1]],                'side': -1, 'veg': 0, 'desc': "Wok-fried chicken atop our delicious egg-fried rice"},
-    8:  {'name': 'Chicken Curry',        'price': 7.80, 'mod': [onion[0], peas[1], hot],      'side': 1,  'veg': 0, 'desc': "Pieces of chicken with onion and pepper, slathered with our signature curry"},
-    9:  {'name': 'Veggie Curry',         'price': 7.80, 'mod': [pepper, onion[0], peas[1], beanSprout, hot], 'side': 1,  'veg': 1, 'desc': "Assorted wok-fried vegetables slathered with our signature curry"},
-    10: {'name': 'Satay Chicken',        'price': 7.80, 'mod': [pepper, onion[0], carrot, hot],              'side': -1, 'veg': 0, 'desc': "Crispy fried chicken chunks doused with a sweet tangy Malaysian satay sauce"},
-    11: {'name': 'Sriracha Noodle',      'price': 7.80, 'mod': [pepper, onion[0], pork, chicken, hot],       'side': -1, 'veg': 0, 'desc': "Noodles with Chinese bbq pork and chicken tossed in a spicy Thai sriracha sauce"},
-    12: {'name': 'Teriyaki Noodle',      'price': 7.80, 'mod': [carrot, beanSprout, onion[0], peas[1]],      'side': -1, 'veg': 1, 'desc': "Thicker noodles with carrot and beansprouts tossed in a tangy teriyaki sauce"},
+    1:  {'name': 'Sweet & Sour Chicken',  'price': 7.80, 'mod': [pepper, onion[0], pineapple], 'side': 1, 'desc': "Crispy fried chicken chunks coated with a delicious sweet & sour sauce with sliced pepper, onion, and pineapple"},
+    2:  {'name': 'Honey Chilli Chicken',  'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1, 'desc': "Shredded chicken with sliced pepper and onion tossed in our sweet chilli sauce"},     
+    3:  {'name': 'Peking Chicken',        'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1, 'desc': "Shredded chicken with sliced pepper and onion coated with a sweet and tangy peking sauce"},
+    4:  {'name': 'Honey Chilli Beef',     'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1, 'desc': "Triple cooked shredded beef with sliced pepper and onion tossed in our sweet chilli sauce"}, 
+    5:  {'name': 'Peking Beef',           'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1, 'desc': "Triple cooked shredded beef with sliced pepper and onion coated with a sweet and tangy peking sauce"},
+    6:  {'name': 'Black Bean Chicken',    'price': 7.80, 'mod': [pepper, onion[0], hot],       'side': 1, 'desc': "Pieces of chicken in a rich black bean saucec with a hint of chilli"},
+    7:  {'name': 'Chicken Fried Rice',    'price': 7.80, 'mod': [egg, peas[1]],                'side': -1, 'desc': "Wok-fried chicken atop our delicious egg-fried rice"},
+    8:  {'name': 'Chicken Curry',         'price': 7.80, 'mod': [onion[0], peas[1], hot],      'side': 1, 'desc': "Pieces of chicken with onion and pepper, slathered with our signature curry"},
+    9:  {'name': 'Veggie Curry [Veg]',    'price': 7.80, 'mod': [pepper, onion[0], peas[1], beanSprout, hot],  'side': 1,  'desc': "Assorted wok-fried vegetables slathered with our signature curry"},
+    10: {'name': 'Satay Chicken',         'price': 7.80, 'mod': [pepper, onion[0], carrot, hot],                     'side': -1, 'desc': "Crispy fried chicken chunks doused with a sweet tangy Malaysian satay sauce"},
+    11: {'name': 'Sriracha Noodle',       'price': 7.80, 'mod': [pepper, onion[0], pork, chicken, hot],              'side': -1, 'desc': "Noodles with Chinese bbq pork and chicken tossed in a spicy Thai sriracha sauce"},
+    12: {'name': 'Teriyaki Noodle [Veg]', 'price': 7.80, 'mod': [carrot, beanSprout, onion[0], peas[1]],       'side': -1, 'desc': "Thicker noodles with carrot and beansprouts tossed in a tangy teriyaki sauce"},
 }
 
 classicSides = {
-    0: {'name': 'No side',      'mod': []},
-    1: {'name': 'Steamed Rice', 'mod': []},
-    2: {'name': 'Fried Rice',   'mod': [egg, peas[0]]},
-    3: {'name': 'Noodles',      'mod': [chicken, onion[0], beanSprout]},
+    0: {'name': 'No side',              'mod': []},
+    1: {'name': 'Steamed Rice [Vgn]',   'mod': []},
+    2: {'name': f'Fried Rice [Veg]',    'mod': [egg, peas[0]]},
+    3: {'name': 'Noodles',              'mod': [chicken, onion[0], beanSprout]},
 }
 
 class Classic():
@@ -247,16 +247,16 @@ class Classic():
 
 
 sides = {
-    1:  {'name': 'Steamed Rice', 'price': 2.50, 'mod': [],                              'veg': 2, 'desc': "Soft steamed rice that goes with everything"},
-    2:  {'name': 'Fried Rice',   'price': 3.00, 'mod': [egg, peas[0]],                  'veg': 1, 'desc': "Delicious egg-fried rice with a soy aroma and a choice for peas"},
-    3:  {'name': 'Noodles',      'price': 3.50, 'mod': [chicken, onion[0], beanSprout], 'veg': 0, 'desc': "Wok-fried egg noodles with chicken, onion, and beansprouts"},
-    4:  {'name': 'Curry',        'price': 2.00, 'mod': [hotCurry, onion[1]],            'veg': 1, 'desc': "Our signature mildly-spicy curry"},
-    5:  {'name': 'Small Curry',  'price': 1.50, 'mod': [hotCurry, onion[1]],            'veg': 1, 'desc': "Our signature mildly-spicy curry"},
-    6:  {'name': 'Korean Sauce', 'price': 2.00, 'mod': [],                              'veg': 1, 'desc': "A tub of our tangy Korean barbecue sauce"},
-    7:  {'name': 'Sweet Chilli Sauce',   'price': 2.00, 'mod': [],                      'veg': 2, 'desc': "A small tub of our sweet chilli sauce"},
-    8:  {'name': 'Soy Sauce',            'price': 2.00, 'mod': [],                      'veg': 2, 'desc': "A small tub of our black vinegar and soy sauce"},
-    9:  {'name': 'Coke',         'price': 2.00, 'mod': [],                              'veg': 2, 'desc': "A 330ml can of Coca-Cola"},
-    10: {'name': 'Water',        'price': 2.00, 'mod': [],                              'veg': 2, 'desc': "A 500ml bottle of still water"},
+    1:  {'name': 'Steamed Rice [Vgn]',          'price': 2.50, 'mod': [],                              'desc': "Soft steamed rice that goes with everything"},
+    2:  {'name': 'Fried Rice [Veg]',            'price': 3.00, 'mod': [egg, peas[0]],                  'desc': "Delicious egg-fried rice with a soy aroma and a choice for peas"},
+    3:  {'name': 'Noodles',                     'price': 3.50, 'mod': [chicken, onion[0], beanSprout], 'desc': "Wok-fried egg noodles with chicken, onion, and beansprouts"},
+    4:  {'name': 'Curry [Veg]',                 'price': 2.00, 'mod': [hotCurry, onion[1]],            'desc': "Our signature mildly-spicy curry"},
+    5:  {'name': 'Small Curry [Veg]',           'price': 1.50, 'mod': [hotCurry, onion[1]],            'desc': "Our signature mildly-spicy curry"},
+    6:  {'name': 'Korean Sauce [Veg]',          'price': 2.00, 'mod': [],                              'desc': "A tub of our tangy Korean barbecue sauce"},
+    7:  {'name': 'Sweet Chilli Sauce [Vgn]',    'price': 2.00, 'mod': [],                              'desc': "A small tub of our sweet chilli sauce"},
+    8:  {'name': 'Soy Sauce [Vgn]',             'price': 2.00, 'mod': [],                              'desc': "A small tub of our black vinegar and soy sauce"},
+    9:  {'name': 'Coke [Vgn]',                  'price': 2.00, 'mod': [],                              'desc': "A 330ml can of Coca-Cola"},
+    10: {'name': 'Water [Vgn]',                 'price': 2.00, 'mod': [],                              'desc': "A 500ml bottle of still water"},
 }
 class Side():
     def __init__(self, count: int, side: int, sideMod: list[int], note: str):

@@ -137,7 +137,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
                 if(modFull == "Yes Lemon"): continue
                 mods.append(modFull)
             items.append((
-                f'{d['count']} {appetisers[d['details'][0]]['name']}', 
+                f'{d['count']} {appetisers[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
                 f'{sauceDict[d['details'][2]]}',
                 mods,
                 int(d['count']) * appetisers[d['details'][0]]['price'],
@@ -169,7 +169,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
         items = []
         for d in orderData['baos']:
             items.append((
-                f'{d['count']} {baos[d['details'][0]]['name']}', 
+                f'{d['count']} {baos[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
                 f'{f"{modTypes[5][d['details'][2]]} " if d['details'][1] != 0 else ""}{sauceDict[d['details'][1]]}', 
                 [f'{modTypes[1][d['details'][3][i]]} {picklesDict[i + 1]}' for i in range(0, 5)],
                 int(d['count']) * baos[d['details'][0]]['price'],
@@ -223,7 +223,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
                 s2mods.append(f'{s2modMod} {s2modName}')
 
             items.append((
-                f'{d['count']} {bentos[d['details'][0]]['name']}', 
+                f'{d['count']} {bentos[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
                 f'{sauceDict[d['details'][6]]}',
                 '',
                 mods,
@@ -288,7 +288,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
                 sMods.append(f'{sModMod} {sModName}')
 
             items.append((
-                f'{d['count']} {classics[d['details'][0]]['name']}', 
+                f'{d['count']} {classics[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
                 mods,
                 f'{classicSides[d['details'][2]]['name']}',
                 sMods,
@@ -338,7 +338,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
                 mods.append(modFull)
 
             items.append((
-                f'{d['count']} {sides[d['details'][0]]['name']}', 
+                f'{d['count']} {sides[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
                 mods,
                 int(d['count']) * sides[d['details'][0]]['price'],
                 d['note']
