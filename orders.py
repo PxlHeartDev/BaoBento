@@ -1,8 +1,11 @@
 # Library imports
 import time
+from time import strftime
 
 # My imports
 from main import db, cursor
+from emails import sendEmail
+from functions import ordinal
 
 modTypes = {
     1: {0: "No", 1: "Less", 2: "With", 3: "Extra"},                 # Pepper, onion, etc.
@@ -54,16 +57,16 @@ pickles = [
 
 appetiserPermittedSauces = [0, 1, 2, 5]
 appetisers = {
-    1:  {'name': 'Spring Rolls',            'price': 4.00,  'mod': [],   'defaultSauce': 1},
-    2:  {'name': 'Thai Spring Rolls',       'price': 4.00,  'mod': [],   'defaultSauce': 1},
-    3:  {'name': 'Teriyaki Wings',          'price': 6.00,  'mod': [],   'defaultSauce': -1},
-    4:  {'name': 'Korean Wings',            'price': 6.00,  'mod': [],   'defaultSauce': -1},
-    5:  {'name': 'Thai Prawn Crackers',     'price': 3.50,  'mod': [],   'defaultSauce': -1},
-    6:  {'name': 'Gyoza',                   'price': 7.00,  'mod': [wellDone],              'defaultSauce': 5},
-    7:  {'name': 'Honey Ribs',              'price': 7.00,  'mod': [wellDone, lemon],       'defaultSauce': -1},
-    8:  {'name': 'Peking Ribs',             'price': 7.00,  'mod': [wellDone],              'defaultSauce': -1},
-    9:  {'name': 'Salted Chilli Chicken',   'price': 6.00,  'mod': [pepper, onion[0], hot],    'defaultSauce': -1},
-    10: {'name': 'Spice Bowl',              'price': 6.50,  'mod': [pepper, onion[0], hot],    'defaultSauce': 3},
+    1:  {'name': 'Spring Rolls',            'price': 4.00,  'mod': [],   'defaultSauce': 1,  'veg': 0, 'desc': "Shredded duck and veg in delicious Korean sauce wrapped in a crispy egg sheet"},
+    2:  {'name': 'Thai Spring Rolls',       'price': 4.00,  'mod': [],   'defaultSauce': 1,  'veg': 1, 'desc': "Noodle, mushroom, and veg wrapped in a crispy egg sheet"},
+    3:  {'name': 'Teriyaki Wings',          'price': 6.00,  'mod': [],   'defaultSauce': -1, 'veg': 0, 'desc': "Deep fried chicken wings slathered in a delicious teriyaki sauce"},
+    4:  {'name': 'Korean Wings',            'price': 6.00,  'mod': [],   'defaultSauce': -1, 'veg': 0, 'desc': "Deep fried chicken wings coated in a spicy Korean sauce"},
+    5:  {'name': 'Thai Prawn Crackers',     'price': 3.50,  'mod': [],   'defaultSauce': -1, 'veg': 2, 'desc': "A big bag of crispy, flavourful thai prawn crackers"},
+    6:  {'name': 'Gyoza',                   'price': 7.00,  'mod': [wellDone],              'defaultSauce': 5,  'veg': 0, 'desc': "Delectable homemade gyoza dumplings"},
+    7:  {'name': 'Honey Ribs',              'price': 7.00,  'mod': [wellDone, lemon],       'defaultSauce': -1, 'veg': 0, 'desc': "Pork ribs doused with honey with a sliced lemon"},
+    8:  {'name': 'Peking Ribs',             'price': 7.00,  'mod': [wellDone],              'defaultSauce': -1, 'veg': 0, 'desc': "Pork ribs covered with a hot and spicy peking sauce"},
+    9:  {'name': 'Salted Chilli Chicken',   'price': 6.00,  'mod': [pepper, onion[0], hot], 'defaultSauce': -1, 'veg': 0, 'desc': "Crispy shredded chicken with sliced pepper and onion, all mixed with spicy salt and chilli flakes"},
+    10: {'name': 'Spice Bowl',              'price': 6.50,  'mod': [pepper, onion[0], hot], 'defaultSauce': 3,  'veg': 0, 'desc': "A bowl of spicy potato wedges, popcorn chicken, and chicken chunks with a helping of sliced pepper and onion"},
 }
 
 class Appetiser:
@@ -98,12 +101,12 @@ picklesDict = {
 }
 
 baos = {
-    1: {'name': 'Chicken',   'price': 7.50, 'pickles': [2, 0, 2, 2, 0], 'sauce': 7},
-    2: {'name': 'Duck',      'price': 8.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 8},
-    3: {'name': 'Rib',       'price': 7.50, 'pickles': [0, 2, 2, 2, 0], 'sauce': 8},
-    4: {'name': 'Pork',      'price': 7.50, 'pickles': [0, 2, 2, 2, 2], 'sauce': 8},
-    5: {'name': 'Veggie',    'price': 7.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 7},
-    6: {'name': 'Vegan',     'price': 7.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 9},
+    1: {'name': 'Chicken',   'price': 7.50, 'pickles': [2, 0, 2, 2, 0], 'sauce': 7, 'veg': 0, 'desc': "2 salted chilli chicken baos with spicy mayo"},
+    2: {'name': 'Duck',      'price': 8.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 8, 'veg': 0, 'desc': "2 aromatic duck confit baos with tangy hoisin sauce and sweet hoisin mayo"},
+    3: {'name': 'Rib',       'price': 7.50, 'pickles': [0, 2, 2, 2, 0], 'sauce': 8, 'veg': 0, 'desc': "2 pulled slow cooked rib baos with sweet tangy peking sauce and sweet hoisin mayo"},
+    4: {'name': 'Pork',      'price': 7.50, 'pickles': [0, 2, 2, 2, 2], 'sauce': 8, 'veg': 0, 'desc': "2 baos of tender braised pork in a delicious tangy sauce with sweet hoisin mayo"},
+    5: {'name': 'Veggie',    'price': 7.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 7, 'veg': 1, 'desc': "2 tempura sweet potato baos with spicy mayo"},
+    6: {'name': 'Vegan',     'price': 7.00, 'pickles': [2, 0, 2, 2, 2], 'sauce': 9, 'veg': 2, 'desc': "2 baos of pulled jackfruit marinated in a classic Chinese bbq sauce with vegan hoisin mayo"},
 }
 
 class Bao:
@@ -135,16 +138,16 @@ class Bao:
 
 bentoPermittedSauces = [0, 4, 10, 11, 12]
 bentos = {
-    1:  {'name': 'Salt & Chilli Chicken',    'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },   
-    2:  {'name': 'Honey Chilli Chicken',     'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },     
-    3:  {'name': 'Peking Chicken',           'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },
-    4:  {'name': 'Honey Beef',               'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], }, 
-    5:  {'name': 'Peking Beef',              'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], }, 
-    6:  {'name': 'Sriracha Noodles',         'price': 9.30, 'mod': [pepper, onion[0], pork, chicken, hot],  'sauce': -1, 'sauceMod': 1, 'side1': [5, []], 'side2': [6, [1, 1, 1, 1, 1]], },
-    7:  {'name': 'Teriyaki Noodles',         'price': 9.30, 'mod': [carrot, beanSprout, onion[0], peas[1]],    'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [6, [1, 1, 1, 1, 0]], },
-    8:  {'name': 'Katsu Chicken',            'price': 9.30, 'mod': [pickles[0]],                            'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], },
-    9:  {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                            'sauce': 10, 'sauceMod': 1, 'side1': [5, []], 'side2': [2, []] },
-    10: {'name': 'Squid',                    'price': 9.80, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], }
+    1:  {'name': 'Salted Chilli Chicken',    'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Crispy shredded chicken with sliced pepper and onion, all mixed with spicy salt and chilli flakes"},   
+    2:  {'name': 'Honey Chilli Chicken',     'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Shredded chicken with sliced pepper and onion tossed in our sweet chilli sauce"},     
+    3:  {'name': 'Peking Chicken',           'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Shredded chicken with sliced pepper and onion coated with a sweet and tangy peking sauce"},
+    4:  {'name': 'Honey Beef',               'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Triple cooked shredded beef with sliced pepper and onion tossed in our sweet chilli sauce"}, 
+    5:  {'name': 'Peking Beef',              'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Tripled cooked shredded beef with sliced pepper and onion coated with a sweet and tangy peking sauce"}, 
+    6:  {'name': 'Sriracha Noodles',         'price': 9.30, 'mod': [pepper, onion[0], pork, chicken, hot],  'sauce': -1, 'sauceMod': 1, 'side1': [5, []], 'side2': [6, [1, 1, 1, 1, 1]], 'veg': 0, 'desc': "Noodles with Chinese bbq pork and chicken tossed in a spicy Thai sriracha sauce"},
+    7:  {'name': 'Teriyaki Noodles',         'price': 9.30, 'mod': [carrot, beanSprout, onion[0], peas[1]], 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [6, [1, 1, 1, 1, 0]], 'veg': 1, 'desc': "Thicker noodles with carrot and beansprouts tossed in a tangy teriyaki sauce"},
+    8:  {'name': 'Katsu Chicken',            'price': 9.30, 'mod': [pickles[0]],                            'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Panko fried chicken breast on a bed of white cabbage"},
+    9:  {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                            'sauce': 10, 'sauceMod': 1, 'side1': [5, []], 'side2': [2, []], 'veg': 0, 'desc': "Spicy, crispy fried chicken strips on a bed of white cabbage"},
+    10: {'name': 'Squid',                    'price': 9.80, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'veg': 0, 'desc': "Breaded shredded squid with sliced pepper and onion, all mixed with spicy salt and chilli flakes"}
 }
 bentoSides = {
     1: {'name': 'Spring Rolls', 'mod': [], },
@@ -195,18 +198,18 @@ class Bento():
 
 
 classics = {
-    1:  {'name': 'Sweet & Sour Chicken', 'price': 7.80, 'mod': [pepper, onion[0], pineapple], 'side': 1},
-    2:  {'name': 'Honey Chilli Chicken', 'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1},
-    3:  {'name': 'Peking Chicken',       'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1},
-    4:  {'name': 'Honey Chilli Beef',    'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1},
-    5:  {'name': 'Peking Beef',          'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1},
-    6:  {'name': 'Black Bean Chicken',   'price': 7.80, 'mod': [pepper, onion[0], hot],       'side': 1},
-    7:  {'name': 'Chicken Curry',        'price': 7.80, 'mod': [onion[0], peas[1], hot],      'side': 1},
-    8:  {'name': 'Chicken Fried Rice',   'price': 7.80, 'mod': [egg, peas[1]],                'side': -1},
-    9:  {'name': 'Veggie Curry',         'price': 7.80, 'mod': [pepper, onion[0], peas[1], beanSprout, hot], 'side': 1},
-    10: {'name': 'Satay Chicken',        'price': 7.80, 'mod': [pepper, onion[0], carrot, hot],              'side': -1},
-    11: {'name': 'Sriracha Noodle',      'price': 7.80, 'mod': [pepper, onion[0], pork, chicken, hot],       'side': -1},
-    12: {'name': 'Teriyaki Noodle',      'price': 7.80, 'mod': [carrot, beanSprout, onion[0], peas[1]],      'side': -1},
+    1:  {'name': 'Sweet & Sour Chicken', 'price': 7.80, 'mod': [pepper, onion[0], pineapple], 'side': 1,  'veg': 0, 'desc': "Crispy fried chicken chunks coated with a delicious sweet & sour sauce with sliced pepper, onion, and pineapple"},
+    2:  {'name': 'Honey Chilli Chicken', 'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1,  'veg': 0, 'desc': "Shredded chicken with sliced pepper and onion tossed in our sweet chilli sauce"},     
+    3:  {'name': 'Peking Chicken',       'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1,  'veg': 0, 'desc': "Shredded chicken with sliced pepper and onion coated with a sweet and tangy peking sauce"},
+    4:  {'name': 'Honey Chilli Beef',    'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1,  'veg': 0, 'desc': "Triple cooked shredded beef with sliced pepper and onion tossed in our sweet chilli sauce"}, 
+    5:  {'name': 'Peking Beef',          'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1,  'veg': 0, 'desc': "Triple cooked shredded beef with sliced pepper and onion coated with a sweet and tangy peking sauce"},
+    6:  {'name': 'Black Bean Chicken',   'price': 7.80, 'mod': [pepper, onion[0], hot],       'side': 1,  'veg': 0, 'desc': "Pieces of chicken in a rich black bean saucec with a hint of chilli"},
+    7:  {'name': 'Chicken Fried Rice',   'price': 7.80, 'mod': [egg, peas[1]],                'side': -1, 'veg': 0, 'desc': "Wok-fried chicken atop our delicious egg-fried rice"},
+    8:  {'name': 'Chicken Curry',        'price': 7.80, 'mod': [onion[0], peas[1], hot],      'side': 1,  'veg': 0, 'desc': "Pieces of chicken with onion and pepper, slathered with our signature curry"},
+    9:  {'name': 'Veggie Curry',         'price': 7.80, 'mod': [pepper, onion[0], peas[1], beanSprout, hot], 'side': 1,  'veg': 1, 'desc': "Assorted wok-fried vegetables slathered with our signature curry"},
+    10: {'name': 'Satay Chicken',        'price': 7.80, 'mod': [pepper, onion[0], carrot, hot],              'side': -1, 'veg': 0, 'desc': "Crispy fried chicken chunks doused with a sweet tangy Malaysian satay sauce"},
+    11: {'name': 'Sriracha Noodle',      'price': 7.80, 'mod': [pepper, onion[0], pork, chicken, hot],       'side': -1, 'veg': 0, 'desc': "Noodles with Chinese bbq pork and chicken tossed in a spicy Thai sriracha sauce"},
+    12: {'name': 'Teriyaki Noodle',      'price': 7.80, 'mod': [carrot, beanSprout, onion[0], peas[1]],      'side': -1, 'veg': 1, 'desc': "Thicker noodles with carrot and beansprouts tossed in a tangy teriyaki sauce"},
 }
 
 classicSides = {
@@ -220,7 +223,6 @@ class Classic():
     def __init__(self, count: int, classic: int, classicMod: list[int], side: int, sideMod: list[int], note: str):
         self.type = "classics"
         self.count = count
-        # SSCh | HCh | PeBe | BBCh | ChC | ChCHo | SatCh
         self.classic = classic
         self.classicMod = classicMod
         self.side = side
@@ -245,13 +247,16 @@ class Classic():
 
 
 sides = {
-    1: {'name': 'Steamed Rice', 'price': 2.50, 'mod': []},
-    2: {'name': 'Fried Rice',   'price': 3.00, 'mod': [egg, peas[0]]},
-    3: {'name': 'Noodles',      'price': 3.50, 'mod': [chicken, onion[0], beanSprout]},
-    4: {'name': 'Curry',        'price': 2.00, 'mod': [hotCurry, onion[1]]},
-    5: {'name': 'Small Curry',  'price': 2.00, 'mod': [hotCurry, onion[1]]},
-    6: {'name': 'Korean Sauce', 'price': 2.00, 'mod': []},
-    7: {'name': 'Coke',         'price': 2.00, 'mod': []}
+    1:  {'name': 'Steamed Rice', 'price': 2.50, 'mod': [],                              'veg': 2, 'desc': "Soft steamed rice that goes with everything"},
+    2:  {'name': 'Fried Rice',   'price': 3.00, 'mod': [egg, peas[0]],                  'veg': 1, 'desc': "Delicious egg-fried rice with a soy aroma and a choice for peas"},
+    3:  {'name': 'Noodles',      'price': 3.50, 'mod': [chicken, onion[0], beanSprout], 'veg': 0, 'desc': "Wok-fried egg noodles with chicken, onion, and beansprouts"},
+    4:  {'name': 'Curry',        'price': 2.00, 'mod': [hotCurry, onion[1]],            'veg': 1, 'desc': "Our signature mildly-spicy curry"},
+    5:  {'name': 'Small Curry',  'price': 1.50, 'mod': [hotCurry, onion[1]],            'veg': 1, 'desc': "Our signature mildly-spicy curry"},
+    6:  {'name': 'Korean Sauce', 'price': 2.00, 'mod': [],                              'veg': 1, 'desc': "A tub of our tangy Korean barbecue sauce"},
+    7:  {'name': 'Sweet Chilli Sauce',   'price': 2.00, 'mod': [],                      'veg': 2, 'desc': "A small tub of our sweet chilli sauce"},
+    8:  {'name': 'Soy Sauce',            'price': 2.00, 'mod': [],                      'veg': 2, 'desc': "A small tub of our black vinegar and soy sauce"},
+    9:  {'name': 'Coke',         'price': 2.00, 'mod': [],                              'veg': 2, 'desc': "A 330ml can of Coca-Cola"},
+    10: {'name': 'Water',        'price': 2.00, 'mod': [],                              'veg': 2, 'desc': "A 500ml bottle of still water"},
 }
 class Side():
     def __init__(self, count: int, side: int, sideMod: list[int], note: str):
@@ -276,7 +281,7 @@ class Side():
 class Order():
     def __init__(self):
         self.content = {"appetisers": [], "baos": [], "bentos": [], "classics": [], "sides": []}
-        self.customerID = 1
+        self.customerID = 0
 
     def assignCustomer(self, ID: int):
         self.customerID = ID
@@ -294,36 +299,28 @@ class Order():
         return f"{int(time.time() * 1000 - 1704067200000)}, {self.customerID}, '{str(self.content).replace("'", '"')}', 0, 0, {int(time.time() - 1704067200)}"
 
     def completeOrder(self, pickupTime: int, note: str):
+        from documents import createOrderReceipt
+        order = self.returnOrder()
         cursor.execute(f"""
             INSERT INTO orders (orderID, customerID_FK, orderData, complete, paid, placementTime, pickupTime, note)
             VALUES
-            ({self.returnOrder()}, {pickupTime}, '{note}')
+            ({order}, {pickupTime}, '{note}')
         """)
         db.commit()
+        
+        if(self.customerID):
+            createOrderReceipt(order = order.split(", ")[0])
+            cursor.execute(f"SELECT email FROM customers WHERE customerID = {self.customerID}")
+            email = cursor.fetchone()[0]
+            placementTime = time.localtime(int(time.time()))
+            pickupTime = time.localtime(pickupTime + 1704067200)
+            sendEmail(email,
+                        "Order Receipt",
+                        f"Thank you for your patronage! Please find your order receipt attached.\n\
+                            \nPlaced: {strftime("%A", placementTime)} {ordinal(int(strftime("%d", placementTime)))} {strftime("%B, %Y at %H:%M:%S", placementTime)}\
+                            \nPickup Time: {strftime("%A", pickupTime)} {ordinal(int(strftime("%d", pickupTime)))} {strftime("%B, %Y at %H:%M:%S", pickupTime)}",
+                            f"documents/orderReceipts/{order.split(", ")[0]}.docx")
 
-def keyFromVal(dict: dict, val: any):
-    try:
-        for key, value in dict.items():
-            if val in str(value):
-                return key
-    except ValueError:
-        print("Value not in list")
-
-def keyFromValPrecise(dict: dict, val: any):
-    try:
-        for key, value in dict.items():
-            if val == str(value):
-                return key
-    except ValueError:
-        print("Value not in list")
-
-def indexFromVal(arr: list, val: any):
-    try:
-        for i in range(0, len(arr)):
-            if val in str(arr[i]):
-                return i
-    except ValueError:
-        print("Value not in list")
 
 o = Order()
 o.assignCustomer(1)

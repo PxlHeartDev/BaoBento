@@ -2,8 +2,6 @@
 from tkinter import *
 import time
 import json
-from docx import Document
-from docx.shared import Inches
 import os
 import math
 
@@ -16,12 +14,16 @@ from time import strftime
 from main import db, cursor, getCustomerData, refreshCustomerData
 from gui import root, createText, createButton, createEntryBox, createDropdown, createCheckbox
 from sql import retrieveCustomerOrders, deleteCustomer, updateDetails, updateEmail, updateNotif, updatePassword
-from orders import keyFromVal, keyFromValPrecise, indexFromVal, Appetiser, Bao, Bento, Classic, Side
-
+from orders import Appetiser, Bao, Bento, Classic, Side
+from documents import createOrderReceipt
+from functions import floatToPrice, ordinal, monthToTime, months, truncateText, closedWindow, keyFromVal, keyFromValPrecise, indexFromVal
 
 # Global, for use with marking orders
 global selectedOrder
 selectedOrder = []
+
+def getSelectedOrder():
+    return selectedOrder
 
 # Customer settings menu
 def createCustomerSettingsToplevel():
@@ -93,7 +95,7 @@ def createCustomerSettingsToplevel():
 #############################################################################################################################
 
 # Owner menu for creating a new order
-def createOwnerCreateOrderTopLevel():
+def createOwnerCreateOrderTopLevel(customerID = 0):
     # Create top level
     OwnerCreateOrder = Toplevel(root, bg='#000000')
     OwnerCreateOrder.geometry('960x690')
@@ -106,24 +108,31 @@ def createOwnerCreateOrderTopLevel():
     createButton([OwnerCreateOrder], 5, 0, 4, "Classics", lambda:createOwnerAddItemTopLevel("classics"), "Calibri 30")
     createButton([OwnerCreateOrder], 6, 0, 4, "Sides", lambda:createOwnerAddItemTopLevel("sides"), "Calibri 30")
 
-
+    # Complete the order, asking for some details
     def completeOrder():
+        # Ask to assign a customer ID if it's the owner placing the order
+        if(customerID == 1): o.assignCustomer(askinteger("Customer ID", "Enter a customer ID to assign the order to. Use 1 if none.", initialvalue=1, parent=OwnerCreateOrder))
         o.completeOrder(
-            askinteger("Pickup time", "Please enter a pickup time in seconds since Jan 1 2024, 00:00 UTC+0"),
-            askstring("Notes", "Please enter any notes about the order, such as allergens or specific requests")
+            askinteger("Pickup time", "Please enter a pickup time in seconds since Jan 1 2024, 00:00 UTC+0", parent=OwnerCreateOrder),
+            askstring("Notes", "Please enter any notes about the order, such as allergens or specific requests", parent=OwnerCreateOrder)
         )
+        messagebox.showinfo("Success", "Successfully placed order", parent=OwnerCreateOrder)
+        OwnerCreateOrder.destroy()
 
+    # More buttons
     createButton([OwnerCreateOrder], 7, 0, 4, "View order", lambda:createOrderReceipt(OwnerCreateOrder, o.getOrderContent()))
     createButton([OwnerCreateOrder], 8, 0, 4, "Complete order", completeOrder)
 
 
-    # Import here for performance and to circumvent circular import issues
+    # Import here to circumvent circular import issues
     from orders import Order, modTypes, sauceDict
 
     # Order object
     o = Order()
+    if(customerID != 0):
+        o.assignCustomer(customerID)
 
-    # Sub-function, creates the add item top level
+    # Sub-function, creates the "Add Item" top level
     def createOwnerAddItemTopLevel(type: str):
         # Create top level
         OwnerAddItem = Toplevel(root, bg='#000000')
@@ -133,7 +142,7 @@ def createOwnerCreateOrderTopLevel():
         match(type):
             case("appetisers"):
 
-                # Import here because idk honestly man I'm tired, probably circular import circumvention or something
+                # Import
                 from orders import appetisers, appetiserPermittedSauces
 
                 # Store the auto-generated UI elements and variables in a list so they can be easily accessed
@@ -156,6 +165,10 @@ def createOwnerCreateOrderTopLevel():
                     UIElements.clear()
                     vars.clear()
 
+                    # Item description
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{appStuff['desc']}', 'Calibri 15'))
+
+                    # Generation modifier dropdown(s)
                     for i in range(0, len(appStuff['mod'])):
                         m = appStuff['mod'][i]
                         oListMod.clear()
@@ -165,19 +178,24 @@ def createOwnerCreateOrderTopLevel():
                         UIElements.append(createText([OwnerAddItem], 5+i, 0, 1, f"{m['name']}: "))
                         UIElements.append(createDropdown([OwnerAddItem], 5+i, 1, 1, oListMod, vars[i], "Calibri 15 bold", modTypes[m['modType']][m['default']], 24))
 
+                    # Generate sauce dropdown if sauce is allowed for this item
                     if(appStuff['defaultSauce'] != -1):
                         oListSauce = []
                         for i in appetiserPermittedSauces:
                             oListSauce.append(sauceDict[i])
+                        # Replace "Micro Curry" with "Small Curry" if small is the default
                         if(appStuff['defaultSauce'] == 3):
                             oListSauce[2] = "Small Curry"
                         UIElements.append(createDropdown([OwnerAddItem], 5, 2, 1, oListSauce, sauceSelected, "Calibri 15 bold", sauceDict[appStuff['defaultSauce']], 24, 5))
+                    # No sauce allowed
                     else:
                         sauceSelected.set("")
                         UIElements.append(createText([OwnerAddItem], 5, 2, 1, "No sauce", "Calibri 20"))
                     
+                    # Final button
                     UIElements.append(createButton([OwnerAddItem], 9, 1, 4, "Add Item", addAppetiser, "Calibri 20", pady=5))
 
+                # Add the item to the order
                 def addAppetiser():
                     o.addItem(Appetiser(
                         count.get(),
@@ -188,6 +206,7 @@ def createOwnerCreateOrderTopLevel():
                     messagebox.showinfo("Success", "Successfully Added appetiser to order", parent=OwnerAddItem)
                     OwnerAddItem.destroy()
 
+                # Overhead vars and UI stuff
                 createText([OwnerAddItem], 1, 0, 4, "Appetisers", "Calibri 35 bold")
                 oListApp = []
                 for a in appetisers.values():
@@ -200,7 +219,7 @@ def createOwnerCreateOrderTopLevel():
 
                 count = IntVar()
                 createDropdown([OwnerAddItem], 2, 2, 1, [1, 2, 3, 4, 5], count, "Calibri 15 bold", 1, 5)
-
+                
                 createText([OwnerAddItem], 4, 0, 2, "Modifiers: ", sticky='s', pady=10)
                 createText([OwnerAddItem], 4, 2, 2, "Sauce: ", sticky='s', pady=10)
 
@@ -209,12 +228,15 @@ def createOwnerCreateOrderTopLevel():
                 createEntryBox([OwnerAddItem], 8, 1, 2, note, "Calibri 20", width=30, ipadx=30)
 
             case("baos"):
+                # Import
                 from orders import baos, baoPermittedSauces, picklesDict
 
+                # Store the auto-generated UI elements and variables in a list so they can be easily accessed
                 UIElements = []
                 sauceAm = []
                 vars = []
 
+                # Runs when the sauce has been changed
                 def sauceChanged(*args):
                     [s.destroy() for s in sauceAm]
                     sauceAm.clear()
@@ -222,35 +244,45 @@ def createOwnerCreateOrderTopLevel():
                         return
                     sauceAm.append(createDropdown([OwnerAddItem], 6, 2, 1, ["Less", "With", "Extra"], vars[0], "Calibri 15 bold", 'With', 15))
 
+                # Runs when the bao meat has been changed
                 def baoChanged(*args):
-                    if('selected' in baoSelected.get()):
-                        return
+                    # Ignore if it is the init value
+                    if('selected' in baoSelected.get()): return
+                    # Get the bao details
                     baoStuff = baos[keyFromVal(baos, baoSelected.get())]
                     
+                    # Destroy each auto-generated UI element
                     [e.destroy() for e in UIElements]
                         
+                    # Clear the lists
                     UIElements.clear()
                     vars.clear()
 
+                    # Item description
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{baoStuff['desc']}', 'Calibri 15'))
+
+                    # Add a new var to the list
                     vars.append(StringVar())
-                        
+                    
+                    # Pickles dropdown
                     oListPickles = []
                     for v in modTypes[1].values():
                         oListPickles.append(v)
-
                     for i in range(0, 5):
                         vars.append(StringVar())
                         UIElements.append(createText([OwnerAddItem], 5+i, 0, 1, f"{picklesDict[i+1]}: "))
                         UIElements.append(createDropdown([OwnerAddItem], 5+i, 1, 1, oListPickles, vars[i+1], "Calibri 15 bold", modTypes[1][baoStuff['pickles'][i]], 8))
 
+                    # Sauce dropdown
                     oListSauce = []
                     for i in baoPermittedSauces:
                         oListSauce.append(sauceDict[i])
                     UIElements.append(createDropdown([OwnerAddItem], 5, 2, 1, oListSauce, sauceSelected, "Calibri 15 bold", sauceDict[baoStuff['sauce']], 15, 5))
                     
+                    # Final button
                     UIElements.append(createButton([OwnerAddItem], 12, 1, 4, "Add Item", addBao, "Calibri 20", pady=5))
 
-
+                # Add the item to the order
                 def addBao():
                     o.addItem(Bao
                             (1, 
@@ -262,10 +294,12 @@ def createOwnerCreateOrderTopLevel():
                     messagebox.showinfo("Success", "Successfully added Bao to order", parent=OwnerAddItem)
                     OwnerAddItem.destroy()
 
+                # Set all pickles to no
                 def noPickles():
                     for v in vars[1:]:
                         v.set("No")
 
+                # Overhead vars and UI stuff
                 createText([OwnerAddItem], 1, 0, 4, "Baos", "Calibri 35 bold")
                 oListBao = []
                 for b in baos.values():
@@ -289,7 +323,7 @@ def createOwnerCreateOrderTopLevel():
                 createText([OwnerAddItem], 11, 0, 1, "Notes: ", "Calibri 20", pady=10)
                 createEntryBox([OwnerAddItem], 11, 1, 2, note, "Calibri 20", width=30, ipadx=30)
 
-
+            # The rest of these won't be commented out fully. They're mostly the same with bits changed around
             case("bentos"):
 
                 # Import here because idk honestly man I'm tired, probably circular import circumvention or something
@@ -317,6 +351,8 @@ def createOwnerCreateOrderTopLevel():
                     UIElements[0].clear()
                     vars[0].clear()
 
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{bentoStuff['desc']}', 'Calibri 15'))
+
                     for i in range(0, len(bentoStuff['mod'])):
                         m = bentoStuff['mod'][i]
                         oListMod.clear()
@@ -343,7 +379,9 @@ def createOwnerCreateOrderTopLevel():
                         for i in bentoPermittedSauces:
                             oListSauce.append(sauceDict[i])
                         UIElements[0].append(createDropdown([OwnerAddItem], 5, 2, 1, oListSauce, sauceSelected, "Calibri 15 bold", sauceDict[bentoStuff['sauce']], 24, 5))
-                    
+                    else:
+                        sauceSelected.set("")
+                        UIElements[0].append(createText([OwnerAddItem], 5, 2, 2, "No sauce", "Calibri 20"))
                     UIElements[0].append(createButton([OwnerAddItem], 26, 3, 4, "Add Item", addBento, "Calibri 20", pady=5))
 
 
@@ -435,6 +473,8 @@ def createOwnerCreateOrderTopLevel():
                     # Clear the lists
                     UIElements[0].clear()
                     vars[0].clear()
+
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{classicStuff['desc']}', 'Calibri 15'))
 
                     for i in range(0, len(classicStuff['mod'])):
                         m = classicStuff['mod'][i]
@@ -536,6 +576,8 @@ def createOwnerCreateOrderTopLevel():
                     UIElements.clear()
                     vars.clear()
 
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{sideStuff['desc']}', 'Calibri 15'))
+
                     for i in range(0, len(sideStuff['mod'])):
                         m = sideStuff['mod'][i]
                         oListMod.clear()
@@ -588,12 +630,14 @@ def createOwnerCreateOrderTopLevel():
 #############################################################################################################################
 #############################################################################################################################
 
+# Top level that lets the owner view all orders in the system
 def createOwnerViewOrdersToplevel():
     OwnerViewOrders = Toplevel(root, bg='#000000')
     OwnerViewOrders.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerViewOrders))
     OwnerViewOrders.geometry('1500x500')
     createText([OwnerViewOrders], 1, 0, 4, "View Orders", "Calibri 35 bold")
 
+    # Main order treeview
     columns = ("oid", "cid", "data", "com", "paid", "ptime", "pktime")
     headings = ("Order ID", "Customer ID", "Order Data", "Completed?", "Paid?", "Placement Time", "Pickup Time")
     widths = (100, 100, 100, 80, 80, 180, 180)
@@ -601,20 +645,24 @@ def createOwnerViewOrdersToplevel():
     treeview = ttk.Treeview(OwnerViewOrders, columns=columns, show='headings', padding=1, selectmode='browse')
     treeview.grid(row = 3, column = 0, columnspan=5, padx=10)
 
+    # Second treeview that shows order details
     orderTreeview = ttk.Treeview(OwnerViewOrders, padding=3, columns=["title", "price"], show='headings')
     orderTreeview.grid(row=3, column=5, padx=10, columnspan=2)
     orderTreeview.column("title", anchor='w', width=400)
     orderTreeview.column("price", anchor='w', width=100)
     orderTreeview.heading("title", text='No order selected', anchor='center')
 
+    # Populate the main order treeview 
     def populate(filter=""):
+        # Delete all existing rows
         treeview.delete(*treeview.get_children())
         
+        # Get orders
         cursor.execute(f"""SELECT * FROM orders {filter}""")
         data = cursor.fetchall()
 
         for d in data:
-            
+            # Item count solving
             itemCount = sum([sum([i['count'] for i in v]) for v in json.loads(d[2]).values()])
             treeview.insert("", END, values=[
                 d[0], 
@@ -624,11 +672,13 @@ def createOwnerViewOrdersToplevel():
                 strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[5] + 1704067200)), 
                 strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[6] + 1704067200))
             ])
+            # Bind the select event to the orderSelected() function
             treeview.bind('<<TreeviewSelect>>', lambda event: orderSelected(event, orderTreeview))
         for c, h, w in zip(columns, headings, widths):
             treeview.column(c, anchor='center', width=w)
             treeview.heading(c, text=h, anchor='center')
 
+    # Mark or unmark an order as complete in the system
     def markComplete():
         global selectedOrder
         if(not(selectedOrder)):
@@ -637,6 +687,7 @@ def createOwnerViewOrdersToplevel():
         cursor.execute(f"UPDATE orders SET complete = {0 if selectedOrder[3] == 'Yes' else 1} WHERE orderID = {selectedOrder[0]};")
         db.commit()
         
+    # Mark or unmark an order as paid for in the system
     def markPaid():
         global selectedOrder
         if(not(selectedOrder)):
@@ -645,6 +696,7 @@ def createOwnerViewOrdersToplevel():
         cursor.execute(f"UPDATE orders SET paid = {0 if selectedOrder[4] == 'Yes' else 1} WHERE orderID = {selectedOrder[0]};")
         db.commit()
 
+    # Action buttons
     buttonFont = 'Calibri 18'
     createText([OwnerViewOrders], 4, 0, 1, "Filter:", pady=8)
     createButton([OwnerViewOrders], 4, 1, 1, "All", command=lambda: populate(""), font=buttonFont)
@@ -655,273 +707,46 @@ def createOwnerViewOrdersToplevel():
     createButton([OwnerViewOrders], 4, 5, 1, "Mark Complete", command=markComplete, font=buttonFont)
     createButton([OwnerViewOrders], 4, 6, 1, "Mark Paid", command=markPaid, font=buttonFont)
     createText([OwnerViewOrders], 5, 5, 2, "Make sure to check that you have the right\norder and to refresh after marking orders!", font="Calibri 10")
-    
-    
-    populate()
 
     createButton([OwnerViewOrders], 5, 2, 2, "Generate Order Receipt", command=lambda:createOrderReceipt(OwnerViewOrders), font=buttonFont, width=20)
 
-
-def createOrderReceipt(parentTV, orderData = {}):
-    if(orderData == {}):
-        global selectedOrder
-        if(not(selectedOrder)):
-            messagebox.showerror("Error", "No order selected", parent=parentTV)
-            return
-    
-    from orders import modTypes, sauceDict, picklesDict, appetisers, baos, bentos, bentoSides, classics, classicSides, sides
-    
-    try:
-        if(orderData == {}):
-            orderNum = selectedOrder[0]
-            open(f'documents/orderReceipts/{orderNum}.docx')
-        else:
-            orderNum = 'NA - Temporary receipt'
-            raise FileNotFoundError
-    except FileNotFoundError:
-        doc = Document()
-        sections = doc.sections
-        for section in sections:
-            section.top_margin = Inches(0.1)
-            section.bottom_margin = Inches(0.1)
-            section.left_margin = Inches(0.1)
-            section.right_margin = Inches(0.1)
-
-        doc.add_heading(f'Order {orderNum}', 0)
-
-        doc.add_picture('images/bb_logo_b.png', width=Inches(2))
-
-        if(orderData == {}):
-            cursor.execute(f"""SELECT *  FROM orders WHERE orderID = {orderNum}""")
-            orderData = json.loads(str(cursor.fetchone()[2]).removeprefix('b\'').removesuffix('\''))
-
-        doc.add_heading('Appetisers', level=1)
-
-        items = []
-        for d in orderData['appetisers']:
-            mods = []
-
-            for i in range(0, len(d['details'][1])):
-                modMod = modTypes[appetisers[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
-                modName = appetisers[d['details'][0]]['mod'][i]['name']
-                if(modName == "Well done" and modMod == "Not"): continue
-                if(modName == "Hot" and modMod == "Normal"): continue
-                if(modName == "Well done"): mods.append(f'{modName}'); continue
-                if(modName == "Hot"): mods.append(f'{modMod}'); continue
-                if(modName == "Lemon" and modMod == "Yes"): continue
-                mods.append(f'{modMod} {modName}')
-            items.append((
-                f'{d['count']} {appetisers[d['details'][0]]['name']}', 
-                f'{sauceDict[d['details'][2]]}', 
-                mods
-            ))
-
-        table = doc.add_table(rows=1, cols=3)
-        header = table.rows[0].cells
-        header[0].text = 'Qty&Name'
-        header[1].text = 'Sauce'
-        header[2].text = 'Mod.'
-        for qname, sauce, mod in items:
-            row = table.add_row().cells
-            row[0].text = qname
-            row[1].text = sauce
-            for m in mod:
-                row[2].text += f'{m}\n'
-            row[2].text = row[2].text.removesuffix('\n')
+    # Populate when the menu opens for the first time
+    populate()
 
 
-        doc.add_heading('Baos', level=1)
-        
-        items = []
-        for d in orderData['baos']:
-            items.append((
-                f'{d['count']} {baos[d['details'][0]]['name']}', 
-                f'{f"{modTypes[5][d['details'][2]]} " if d['details'][1] != 0 else ""}{sauceDict[d['details'][1]]}', 
-                [f'{modTypes[1][d['details'][3][i]]} {picklesDict[i + 1]}' for i in range(0, 5)]
-            ))
 
-        table = doc.add_table(rows=1, cols=3)
-        header = table.rows[0].cells
-        header[0].text = 'Qty&Name'
-        header[1].text = 'Sauce'
-        header[2].text = 'Pickles'
-        for qname, sauce, mod in items:
-            row = table.add_row().cells
-            row[0].text = qname
-            row[1].text = sauce
-            for m in mod:
-                row[2].text += f'{m}\n'
-            row[2].text = row[2].text.removesuffix('\n')
-        
-        
-        doc.add_heading('Bentos', level=1)
-
-        items = []
-        for d in orderData['bentos']:
-            mods = []
-            s1mods = []
-            s2mods = []
-
-            for i in range(0, len(d['details'][1])):
-                modMod = modTypes[bentos[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
-                modName = bentos[d['details'][0]]['mod'][i]['name']
-                if(modName == "Hot" and modMod == "Normal"): continue
-                if(modName == "Hot"): mods.append(f'{modMod}'); continue
-                mods.append(f'{modMod} {modName}')
-
-            for i in range(0, len(d['details'][3])):
-                s1modMod = modTypes[bentoSides[d['details'][2]]['mod'][i]['modType']][d['details'][3][i]]
-                s1modName = bentoSides[d['details'][2]]['mod'][i]['name']
-                s1mods.append(f'{s1modMod} {s1modName}')
-
-            for i in range(0, len(d['details'][5])):
-                s2modMod = modTypes[bentoSides[d['details'][4]]['mod'][i]['modType']][d['details'][5][i]]
-                s2modName = bentoSides[d['details'][4]]['mod'][i]['name']
-                s2mods.append(f'{s2modMod} {s2modName}')
-
-            items.append((
-                f'{d['count']} {bentos[d['details'][0]]['name']}', 
-                f'{sauceDict[d['details'][6]]}',
-                '',
-                mods,
-                f'{bentoSides[d['details'][2]]['name']}',
-                s1mods,
-                f'{bentoSides[d['details'][4]]['name']}',
-                s2mods,
-            ))
-
-        table = doc.add_table(rows=1, cols=7)
-        header = table.rows[0].cells
-        header[0].text = 'Qty&Name'
-        header[1].text = 'Sauce'
-        header[2].text = 'Mod.'
-        header[3].text = 'Side 1'
-        header[4].text = 'S1 Mod.'
-        header[5].text = 'Side 2'
-        header[6].text = 'S2 Mod.'
-        for qname, sauce, sauceMod, mod, s1, s1m, s2, s2m in items:
-            row = table.add_row().cells
-            row[0].text = qname
-            row[1].text = f'{sauce}{f" ({sauceMod})" if sauceMod else ""}'
-            for m in mod:
-                row[2].text += f'{m}\n'
-            row[2].text = row[2].text.removesuffix('\n')
-            row[3].text = s1
-            for m1 in s1m:
-                row[4].text += f'{m1}\n'
-            row[4].text = row[4].text.removesuffix('\n')
-            row[5].text = s2
-            for m2 in s2m:
-                row[6].text += f'{m2}\n'
-            row[6].text = row[6].text.removesuffix('\n')
-
-        
-        doc.add_heading('Classics', level=1)
-        
-        items = []
-        for d in orderData['classics']:
-            mods = []
-            sMods = []
-
-            for i in range(0, len(d['details'][1])):
-                modMod = modTypes[classics[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
-                modName = classics[d['details'][0]]['mod'][i]['name']
-                if(modName == "Hot" and modMod == "Normal"): continue
-                if(modName == "Hot"): mods.append(f'{modMod}'); continue
-                mods.append(f'{modMod} {modName}')
-
-            for i in range(0, len(d['details'][3])):
-                sModMod = modTypes[classicSides[d['details'][2]]['mod'][i]['modType']][d['details'][3][i]]
-                sModName = classicSides[d['details'][2]]['mod'][i]['name']
-                sMods.append(f'{sModMod} {sModName}')
-
-            items.append((
-                f'{d['count']} {classics[d['details'][0]]['name']}', 
-                mods,
-                f'{classicSides[d['details'][2]]['name']}',
-                sMods,
-            ))
-
-        table = doc.add_table(rows=1, cols=4)
-        header = table.rows[0].cells
-        header[0].text = 'Qty&Name'
-        header[1].text = 'Mod.'
-        header[2].text = 'Side'
-        header[3].text = 'S Mod.'
-        for qname, mod, s, sm in items:
-            row = table.add_row().cells
-            row[0].text = qname
-            for m in mod:
-                row[1].text += f'{m}\n'
-            row[1].text = row[1].text.removesuffix('\n')
-            row[2].text = s
-            for m in sm:
-                row[3].text += f'{m}\n'
-            row[3].text = row[3].text.removesuffix('\n')
-        
-
-
-        doc.add_heading('Sides', level=1)
-
-        items = []
-        for d in orderData['sides']:
-            mods = []
-            sMods = []
-
-            for i in range(0, len(d['details'][1])):
-                modMod = modTypes[sides[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
-                modName = sides[d['details'][0]]['mod'][i]['name']
-                if(modName == "Hot" and modMod == "Normal"): continue
-                if(modName == "Onion" and modMod == "Yes"): mods.append(f'Plus {modName}'); continue
-                if(modName == "Onion" and modMod == "No"): continue
-                mods.append(f'{modMod} {modName}')
-
-            items.append((
-                f'{d['count']} {sides[d['details'][0]]['name']}', 
-                mods
-            ))
-
-        table = doc.add_table(rows=1, cols=2)
-        header = table.rows[0].cells
-        header[0].text = 'Qty&Name'
-        header[1].text = 'Mod.'
-        for qname, mod in items:
-            row = table.add_row().cells
-            row[0].text = qname
-            for m in mod:
-                row[1].text += f'{m}\n'
-            row[1].text = row[1].text.removesuffix('\n')
-        
-        doc.add_page_break()
-
-        doc.save(f'documents/orderReceipts/{orderNum}.docx')
-
-    finally:
-        if os.system(f'start documents/orderReceipts/"{orderNum}".docx') != 0:
-            messagebox.showerror("Error", "Cannot open receipt, file already open!", parent=parentTV)
 
 #############################################################################################################################
 #############################################################################################################################
 #############################################################################################################################
 
+# Owner customer management
 def createOwnerManageCustomersToplevel():
     OwnerManageCustomers = Toplevel(root, bg='#000000')
     OwnerManageCustomers.geometry('1230x500')
     createText([OwnerManageCustomers], 1, 0, 4, "Manage Customers", "Calibri 35 bold")
 
+    # Treeview stuff
     columns = ("cid", "fn", "ln", "pn", "em", "pw")
     headings = ("Customer ID", "First Name", "Last Name", "Phone Number", "Email", "Password")
 
     treeview = ttk.Treeview(OwnerManageCustomers, columns=columns, show='headings', padding=1, selectmode='browse')
+
+    # Get customer data
     cursor.execute(f"SELECT * FROM customers")
     data = cursor.fetchall()
+
+    # Populate treeview
     for d in data:
         treeview.insert("", END, values=d)
     for c, h in zip(columns, headings):
         treeview.heading(c, text=h)
     treeview.grid(row = 3, column = 0, padx=10)
+
+    # Bind the selected event to the customerSelected() function
     treeview.bind('<<TreeviewSelect>>', lambda event: customerSelected(event, treeview))
 
+# Open the moderation top level when a customer is clicked on
 def customerSelected(event, tree):
     selected_items = event.widget.selection()
     if selected_items:
@@ -931,14 +756,19 @@ def customerSelected(event, tree):
 
 #############################################################################################################################
 
+# Customer moderation, allows the owner to see orders that a specific customer has placed
+# Will soon include other stuff such as blacklisting emails and phone numbers
 def createOwnerModerationToplevel(customer: list):
     OwnerManageIndividual = Toplevel(root, bg='#000000')
     createText([OwnerManageIndividual], 1, 0, 4, "Manage Customer", "Calibri 35 bold")
     createText([OwnerManageIndividual], 2, 0, 4, f"{customer[0]}, {customer[1]} {customer[2]}", "Calibri 20 bold")
+
+    # View the customer's individual order history
     createButton([OwnerManageIndividual], 3, 0, 4, "View Order History", lambda:createOwnerViewCustomerOrdersToplevel(customer), "Calibri 18", ipadx=15)
 
 #############################################################################################################################
 
+# View orders filtered by a customer ID
 def createOwnerViewCustomerOrdersToplevel(customer):
     OwnerViewCustomerOrders= Toplevel(root, bg='#000000')
     OwnerViewCustomerOrders.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerViewCustomerOrders))
@@ -946,8 +776,10 @@ def createOwnerViewCustomerOrdersToplevel(customer):
     createText([OwnerViewCustomerOrders], 1, 0, 4, "Order History", "Calibri 35 bold")
     createText([OwnerViewCustomerOrders], 2, 0, 4, f"{customer[0]}, {customer[1]} {customer[2]}", "Calibri 20 bold")
 
+    # Get customer's orders
     data = retrieveCustomerOrders(customer[0])
 
+    # Treeview stuff
     columns = ("oid", "data", "com", "paid", "ptime", "pktime")
     headings = ("Order ID", "Order Data", "Completed?", "Paid?", "Placement Time", "Pickup Time")
     widths = (100, 100, 80, 80, 180, 180)
@@ -959,6 +791,7 @@ def createOwnerViewCustomerOrdersToplevel(customer):
     orderTreeview.column("price", anchor='w', width=100)
     orderTreeview.heading("title", text='No order selected', anchor='center')
 
+    # More treeview stuff
     for d in data:
         itemCount = sum([sum([i['count'] for i in v]) for v in json.loads(d[2]).values()])
         treeview.insert("", END, values=[d[0], f"{itemCount} item{'s' if itemCount > 1 else ''}", "Yes" if d[3] else "No", "Yes" if d[4] else "No",  strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[5] + 1704067200)), strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[6] + 1704067200))])
@@ -970,23 +803,35 @@ def createOwnerViewCustomerOrdersToplevel(customer):
 
 #############################################################################################################################
 
+# Runs when an order is selected in the order treeview
+# Kind of useless because of the receipt system but I kept it because
+# 1: I worked hard on it. 2: It's neat I guess. 3: It can be used to quickly check the rough details of an order.
 def orderSelected(event, tree):
     selectedItems = event.widget.selection()
     if selectedItems:
         item = selectedItems[0]
         record = event.widget.item(item)['values']
+        # Set the selectedOrder global var to the retrieved treeview row
         global selectedOrder
         selectedOrder = record
+
+        # Get order data
         cursor.execute(f"""SELECT *  FROM orders WHERE orderID = {record[0]}""")
         orderData = cursor.fetchone()[2]
 
+        # Treeview stuff
         tree.heading("title", text=f'Order {record[0]}', anchor='center')
         tree.heading("price", text='Price:', anchor='center')
 
+        # Delete old data
         tree.delete(*tree.get_children())
 
         totalPrice = 0.00
 
+        # Iterate through all the items in the order data
+        # Processes the data into readable information and places it in the treeview
+        # Modifiers and sides for a particular item will appear when double clicked
+        # Price per item, per section, and the total of the order is calculated along the way
         for k, v in json.loads(orderData).items():
             order = tree.insert("", END, values=[f"[{sum([i['count'] for i in v])}] {k.title()}"])
             for jtem in v:
@@ -1043,6 +888,7 @@ def orderSelected(event, tree):
                             tree.insert(sides, END, values=[f"            {m}"])
                         totalPrice += float(text['price'])
 
+        # Total price at the end
         tree.insert("", END, values=[""])
         tree.insert("", END, values=[f"Total: ", floatToPrice(totalPrice)])
 
@@ -1050,6 +896,7 @@ def orderSelected(event, tree):
 #############################################################################################################################
 #############################################################################################################################
 
+# Employee management
 def createOwnerManageEmployeesToplevel():
     OwnerManageEmployees = Toplevel(root, bg='#000000')
     OwnerManageEmployees.geometry('1230x500')
@@ -1068,6 +915,7 @@ def createOwnerManageEmployeesToplevel():
     treeview.grid(row = 3, column = 0, padx=10)
     treeview.bind('<<TreeviewSelect>>', lambda event: employeeSelected(event, treeview))
 
+# Runs when an employee is selected in the treeview
 def employeeSelected(event, tree):
     selected_items = event.widget.selection()
     if selected_items:
@@ -1078,7 +926,8 @@ def employeeSelected(event, tree):
 #############################################################################################################################
 #############################################################################################################################
 #############################################################################################################################
-        
+    
+# Graph generation
 def createOwnerReportsToplevel():
 
     # Import item details
@@ -1090,38 +939,51 @@ def createOwnerReportsToplevel():
     OwnerReports.geometry("1500x500")
     createText([OwnerReports], 1, 0, 4, "Reports", "Calibri 35 bold")
 
+    # Dropdown data
     oList = ["All Time", "Current Month", "Current Year"]
     oListMonth = ["Whole Year"]
+
+    # Store the auto-generated UI elements in a list so they can be easily access
     UIElements = [[], [], []]
 
+    # Populate the rest of the period list with the years from 2024 to current year
     for y in range(2024, int(strftime("%Y")) + 1):
         oList.append(strftime("%Y", time.struct_time([y, 1, 1, 0, 0, 0, 0, 1, 0])))
 
+    # Some variables
     selectedPeriod = StringVar()
     selectedMonth = StringVar()
     selectedItemCat = StringVar()
 
+    # Period dropdown
     createDropdown([OwnerReports], 2, 0, 2, oList, selectedPeriod, "Calibri 20", "All Time")
 
     [e.destroy() for e in UIElements[1]]
     UIElements[1].clear()
+    # Category selection dropdown
     oListItemCats = ["Appetisers", "Baos", "Bentos", "Classics", "Sides"]
     UIElements[1].append(createDropdown([OwnerReports], 5, 2, 1, oListItemCats, selectedItemCat, "Calibri 20", "Appetisers"))
     UIElements[1].append(createText([OwnerReports], 6, 2, 1, "Note: Generating an item trend graph for a specific\nmonth won't yield particularly useful results", "Calibri 15"))
 
+    # Runs when the period of report changes
     def periodChanged(*args):
         [e.destroy() for e in UIElements[0]]
         UIElements[0].clear()
+        # If it isn't a specific year, don't do anything
         if(selectedPeriod.get() in ["All Time", "Current Month", "Current Year"]):
             return
         oListMonth = ["Whole Year"]
+        # How many months should it go to?
+        # If the current year is greater than the selected year, set the month limit to 13
         if(int(strftime("%Y")) > int(selectedPeriod.get())): r = 13
+        # Else set the month limit to the current month (-1 because range)
         else: r = int(strftime("%m"))
+        # Month dropdown
         for m in range(1, r):
             oListMonth.append(strftime("%B", time.struct_time([y, m, 1, 0, 0, 0, 0, 1, 0])))
         UIElements[0].append(createDropdown([OwnerReports], 2, 2, 2, oListMonth, selectedMonth, "Calibri 20", "Whole Year"))
 
-
+    # Runs when the item category changes
     cat = [{}]
     def itemCatChanged(*args):
         [e.destroy() for e in UIElements[2]]
@@ -1137,80 +999,15 @@ def createOwnerReportsToplevel():
                 cat[0] = classics
             case("Sides"):
                 cat[0] = sides
-    
+    # Traces
     selectedPeriod.trace_add("write", periodChanged)
     selectedItemCat.trace_add("write", itemCatChanged)
 
+    # Run each function for the first time
     periodChanged()
     itemCatChanged()
     
-    # # Document generation for sold food items
-    # def generateSoldFoodItemsReport(timeMin = 0, timeMax = 1704067200):
-    #     doc = Document()
-    #     doc.add_heading('Sold Food Items', 0)
-
-    #     doc.add_picture('images/bb_logo_b.png', width=Inches(2))
-
-    #     match(selectedPeriod.get()):
-    #         case("Current Month"):
-    #             doc.add_paragraph(f"For the month of {strftime("%B")}")
-    #             doc.add_paragraph("As of the " + ordinal(int(strftime("%d"))))
-    #         case("Current Year"):
-    #             doc.add_paragraph(f"For the year of {strftime("%Y")}")
-    #             doc.add_paragraph(f"As of the {ordinal(int(strftime("%d")))} of {strftime("%B")}")
-    #         case("All Time"):
-    #             doc.add_paragraph(f"All current data")
-    #         case(_):
-    #             doc.add_paragraph(f"For the month of {strftime("%B, %Y", time.localtime(timeMin))}")
-            
-    #     cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {timeMin} AND placementTime < {timeMax}""")
-    #     data = cursor.fetchall()
-    #     app = [[o['name'], 0] for o in appetisers.values()]
-    #     bao = [[o['name'], 0] for o in baos.values()]
-    #     ben = [[o['name'], 0] for o in bentos.values()]
-    #     #cla = [[o['name'], 0] for o in classics.values()]
-    #     #sid = [[o['name'], 0] for o in sides.values()]
-        
-    #     for dat in data:
-    #         d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))
-    #         for a in d['appetisers']:
-    #             app[a['details'][0] - 1][1] += a['count']
-    #         for b in d['baos']:
-    #             bao[b['details'][0] - 1][1] += b['count']
-    #         for b in d['bentos']:
-    #             ben[b['details'][0] - 1][1] += b['count']
-    #         for c in d['classics']:
-    #             pass
-    #         for s in d['sides']:
-    #             pass
-
-    #     records = (["Appetisers", app], ["Baos", bao], ["Bentos", ben])#, ["Classics", cla], ["Sides", sid])
-
-    #     for r in records:
-    #         doc.add_heading(r[0], level=1)
-    #         table = doc.add_table(rows=1, cols=2)
-    #         header = table.rows[0].cells
-    #         header[0].text = 'Name'
-    #         header[1].text = 'Qty Sold'
-    #         total = 0
-    #         for name, qty in r[1]:
-    #             row = table.add_row().cells
-    #             row[0].text = name
-    #             row[1].text = str(qty)
-    #             total += qty
-    #         doc.add_page_break()
-    #         row = table.add_row().cells
-    #         row[0].text = "Total sold"
-    #         row[1].text = str(total)
-
-    #     doc.add_page_break()
-
-    #     try:
-    #         doc.save('documents/report.docx')
-    #         os.system('start documents/report.docx')
-    #     except PermissionError:
-    #         messagebox.showerror("Error", "File already open!\nPlease close the active report file to update the details", parent=OwnerReports)
-    
+    # Generate a bar chart for sold items
     def generateSoldFoodItemsGraph():
         title, timeRange = graphTitle()
 
@@ -1221,16 +1018,20 @@ def createOwnerReportsToplevel():
         for i in list(cat[0].values()):
             graphData.update({i['name']: 0})
 
+        # Defines between what two times data should be considered
         curTimeCheck = timeRange[0]
         while curTimeCheck < timeRange[1]:
+            # Do some black magic with time and time structs
             curTime = time.localtime(curTimeCheck)
             timeNext = curTime
             timeNext = time.struct_time([timeNext.tm_year, timeNext.tm_mon + 1, *timeNext[2:9]])
             curTimeCheck = time.mktime(timeNext)
 
+            # Get orders where their time is within the ranges
             cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {time.mktime(curTime)} AND placementTime < {time.mktime(timeNext)}""")
             data = cursor.fetchall()
-        
+
+            # For each order, add the item count to the item count stored of the graph data
             for dat in data:
                 d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))[selectedItemCat.get().lower()]
                 for i in d:
@@ -1238,33 +1039,42 @@ def createOwnerReportsToplevel():
                         graphData[cat[0][i['details'][0]]['name']] += i['count']
                     except IndexError:
                         graphData[cat[0][i['details'][0]]['name']].append(i['count'])
-                    
+        # Plot it
         plotBarChart(title, "Item", "Qty Sold", graphData)
 
+    # Generate a line chart of item counts for each month within thhe given period
     def generateItemTrendGraph():
         title, timeRange = graphTitle()
-
+        
         title = f"{selectedItemCat.get()}\n{title}"
-                   
+        
         graphData = {}
         xLabels = []
 
+        #  Add each item to the list with a count of 0 for each
         for i in list(cat[0].values()):
-            graphData.update({i['name']: [0 for i in range(0, 12)]})
+            graphData.update({i['name']: []})
 
         curTimeCheck = timeRange[0]
         m = 0
+        # Defines between what two times data should be considered
         while curTimeCheck < timeRange[1]:
+            for i in list(cat[0].values()):
+                graphData[i['name']].extend([0])
             curTime = time.localtime(curTimeCheck)
+            # Generate the month labels
             xLabels.append(f'{strftime("%b, %Y", time.localtime(curTimeCheck + 1704067200))}')
             timeNext = curTime
-            temp = [timeNext.tm_year, timeNext.tm_mon + 1, 2, 0, 0, 0, *timeNext[6:9]]
-            timeNext = time.struct_time(temp)
+            # I used day as 2 here instead of 1 because the time library doesn't like it sometimes with leapyears
+            # It used to display "February" twice with no "December"
+            timeNext = time.struct_time([timeNext.tm_year, timeNext.tm_mon + 1, 2, 0, 0, 0, *timeNext[6:9]])
             curTimeCheck = time.mktime(timeNext)
 
+            # Get orders where their time is within the ranges
             cursor.execute(f"""SELECT orderData FROM orders WHERE placementTime > {time.mktime(curTime)} AND placementTime < {time.mktime(timeNext)}""")
             data = cursor.fetchall()
-
+            
+            # For each order, add the item count to the item count stored of the graph data for the given month
             for dat in data:
                 d = json.loads(str(dat[0]).removeprefix('b\'').removesuffix('\''))[selectedItemCat.get().lower()]
                 for i in d:
@@ -1272,12 +1082,12 @@ def createOwnerReportsToplevel():
             m = m + 1
         plotLineChart(title, "Month, Year", "Qty Sold", graphData, xLabels)
 
+    # Data is in the form of {'Item name': count, 'Item name': count, ...}
     def plotBarChart(graphName: str, xName: str, yName: str, data: dict):
         import matplotlib.pyplot as mpl
         
         fig = mpl.figure(figsize=(14.0, 8.0))
         graph = fig.subplots()
-        #graph = mpl.figure(figsize=(8.0, 4.5))
 
         count = 0
         for k, v in data.items():
@@ -1285,6 +1095,7 @@ def createOwnerReportsToplevel():
                 graph.bar(truncateText(k, math.floor(25-(1.3 * len(data.items())))), v, 0.9).set_label(k)
                 count += 1
         
+        # Set labels
         graph.set_xlabel(xName)
         graph.set_ylabel(yName)
         graph.set_title(graphName)
@@ -1301,6 +1112,8 @@ def createOwnerReportsToplevel():
         except ValueError:
             messagebox.showerror("Error", "No items in category for given time range", parent=OwnerReports)
 
+    # Data is in the form of {'Item name': [month1 count, month2 count, month3 count...], 'Item name': [month1 count, month2 count, month3 count...], ...}
+    # xLabels are a list of the months
     def plotLineChart(graphName: str, xName: str, yName: str, data: dict, xLabels: list[str]):
         import matplotlib.pyplot as mpl
         
@@ -1364,40 +1177,6 @@ def createOwnerReportsToplevel():
 #############################################################################################################################
 #############################################################################################################################
 
-def floatToPrice(f: float):
-    return f"£{format(f, ',.2f')}"
-
-def ordinal(n: int):
-    if 11 <= (n % 100) <= 13:
-        suffix = 'th'
-    else:
-        suffix = ['th', 'st', 'nd', 'rd', 'th'][min(n % 10, 4)]
-    return str(n) + suffix
-
-def monthToTime(month: int or str, year: int or str):
-    if(type(month) == int):
-        m = month
-    else:
-        m = indexFromVal(months, month) + 1
-    if(type(year) == int):
-        y = year
-    else:
-        y = int(year)
-    return time.mktime(time.struct_time([y, m, 1, 1, 0, 0, 0, 1, 0])) - 1704067200
-    
-months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-
-def truncateText(text: str, length: int):
-    if(len(text) <= length + 1):
-        return text
-    if(text[length-1]) == ' ':
-        return f'{text[0:length-1]}...'
-    return f'{text[0:length]}...'
-
-def closedWindow(frame):
-    global selectedOrder
-    selectedOrder = []
-    frame.destroy()
 
 #############################################################################################################################
 #############################################################################################################################

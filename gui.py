@@ -170,13 +170,17 @@ EmployeeMenu, EmployeeLogin, EmployeeSchedule,
 OwnerMenu,
 ):
     i.grid(row=0, column=0, sticky='news')
+#     i.grid_rowconfigure(0, weight=1)
+#     i.grid_columnconfigure(0, weight=1)
+# root.grid_rowconfigure(0, weight=1)
+# root.grid_columnconfigure(0, weight=1)
 
 #### Main menu frame #####
 createButton([CustomerCreate, CustomerLogin, EmployeeLogin], 8, 0, 4, "Main Menu", lambda:[setFrame(MainMenu), clearBoxes()], "Calibri 22", width=40, padx=8, pady=5)
 
 createText([MainMenu, CustomerHome], 0, 0, 3, "Bao&Bento", "Calibri 40 bold", 'center')
-createButton([MainMenu], 1, 1, 1, "Customers", lambda:setFrame(CustomerCreate, "Create or log in to a customer account", "Customer Portal"), "Calibri 25")
-createButton([MainMenu], 2, 1, 1, "Employees", lambda:setFrame(EmployeeLogin, "Your username will be your first initial then\nyour last name in all lower case (e.g. jdoe),\nand your access key would\nhave been specified by you", "Info"), "Calibri 25")
+createButton([MainMenu], 1, 1, 1, "Customers", lambda:setFrame(CustomerLogin, "Create or log in to a customer account", "Customer Portal"), "Calibri 25")
+createButton([MainMenu], 2, 1, 1, "Employees", lambda:setFrame(EmployeeLogin, "Your username will be your first initial then\nyour last name in all lower case (e.g. jdoe),\nand your access key will\nhave been specified by you", "Info"), "Calibri 25")
 createButton([MainMenu], 3, 1, 1, "Quit", lambda:root.destroy(), "Calibri 20", pady=5)
 
 ##### Customer #####
@@ -216,7 +220,7 @@ createButton([CustomerLogin], 9, 1, 1, "Create Account", lambda:setFrame(Custome
 
 ### Customer Home ###
 createText([CustomerHome], 1, 0, 4, "Home", "Calibri 35 bold")
-createButton([CustomerHome], 2, 0, 1, "Menu/Create an Order", lambda:setFrame(CustomerCreateOrder), "Calibri 18", ipadx=38)
+createButton([CustomerHome], 2, 0, 1, "Menu/Create an Order", lambda:createOwnerCreateOrderTopLevel(getCustomerData()[0]), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 3, 0, 1, "Rewards", lambda:setFrame(CustomerRewards), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 4, 0, 1, "View Orders", lambda:setFrame(CustomerOrders), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 5, 0, 1, "Settings", lambda:createCustomerSettingsToplevel(), "Calibri 18", ipadx=38)
@@ -243,7 +247,7 @@ createButton([EmployeeLogin], 1, 3, 1, "Login", employeeLogin, "Calibri 18", pad
 
 ### Menu ###
 createText([OwnerMenu], 1, 0, 4, "Bao&Bento Management", "Calibri 35 bold")
-createButton([OwnerMenu], 2, 0, 4, "Create an Order", lambda:createOwnerCreateOrderTopLevel(), "Calibri 18", ipadx=20)
+createButton([OwnerMenu], 2, 0, 4, "Create an Order", lambda:createOwnerCreateOrderTopLevel(1), "Calibri 18", ipadx=20)
 createButton([OwnerMenu], 3, 0, 4, "View Orders", lambda:createOwnerViewOrdersToplevel(), "Calibri 18", ipadx=20)
 createButton([OwnerMenu], 4, 0, 4, "Manage Customers", lambda:createOwnerManageCustomersToplevel(), "Calibri 18", ipadx=20)
 createButton([OwnerMenu], 5, 0, 4, "Manage Employees", lambda:createOwnerManageEmployeesToplevel(), "Calibri 18", ipadx=20)
@@ -255,4 +259,5 @@ from toplevels import *
 
 # Initialize the GUI!
 setFrame(MainMenu)
+
 root.mainloop()

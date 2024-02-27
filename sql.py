@@ -11,6 +11,16 @@ from main import db, cursor, refreshCustomerData, getCustomerData
 def addCustomer(firstName: str, lastName: str, number: str, email: str, password: str, conPassword: str):
     ## Some validation
 
+    # Length and presence checks
+    values = [[firstName, "First Name", 24], [lastName, "Last Name", 24], [number, "Number", 14], [email, "Email", 48], [password, "Password", 32]]
+    for v in values:
+        if(not v[0]):
+            messagebox.showerror("Error", "One or more field(s) left blank.\nPlease ensure all fields have been filled out.")
+            return False
+        if(len(v[0]) > v[2]):
+            messagebox.showerror("Error", f"{v[1]} is too long, must be less than {v[2]} characters")
+            return False
+
     # Simple email regex check
     if(not(re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email))):
         messagebox.showerror("Error", "Email must contain a valid domain")
@@ -27,16 +37,6 @@ def addCustomer(firstName: str, lastName: str, number: str, email: str, password
     if(password != conPassword):
         messagebox.showerror("Error", "Passwords do not match")
         return False
-
-    # Length and presence checks
-    values = [[firstName, "First Name", 24], [lastName, "Last Name", 24], [number, "Number", 14], [email, "Email", 48], [password, "Password", 32]]
-    for v in values:
-        if(not v[0]):
-            messagebox.showerror("Error", "One or more field(s) left blank.\nPlease ensure all fields have been filled out.")
-            return False
-        if(len(v[0]) > v[2]):
-            messagebox.showerror("Error", f"{v[1]} is too long, must be less than {v[2]} characters")
-            return False
 
     # Generate an ID as milliseconds since Jan 1 2024, 00:00 UTC+0
     # This may not work on older devices if they do not support milliseconds
