@@ -80,6 +80,15 @@ if __name__ == "__main__":
             (1, "Peter", "Cheung", "MrBao123")
         """)
         db.commit()
+    cursor.execute("SELECT * FROM customers WHERE customerID = 1")
+    if(not(cursor.fetchone())):
+        print("\nNo NULL customer found, creating one")
+        cursor.execute(f"""
+            INSERT INTO customers (customerID, firstName, lastName, number, email, password, notifPref)
+            VALUES
+            (1, "NULL", "CUSTOMER", "", "r", "^063/OE7*k`[smyw", 0)
+        """)
+        db.commit()
 
     # Version print
     print(f"""
