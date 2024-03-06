@@ -1,5 +1,7 @@
-# Other stuff
+# Library Imports
 import os.path
+
+# Email stuff
 import ssl
 import smtplib
 from email import encoders
@@ -40,5 +42,3 @@ def sendEmail(recipient: str, subject: str, body = "", attachment = None):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as server:
         server.login(email, password)
         server.sendmail(email, recipient, msg.as_string())
-
-#json.loads(str(THINGY).removeprefix('b\'').removesuffix('\''))

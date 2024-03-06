@@ -1,7 +1,6 @@
 # Library Imports
 import sys
 import tkinter
-import os
 
 # mysql.connector must be imported explicitly
 import mysql.connector
@@ -14,20 +13,22 @@ db = mysql.connector.connect(
     auth_plugin="mysql_native_password"
 )
 
-# Store the data of the currently logged in customer
-global customerData
+# Store the data of the currently logged in customer/employee
+global userData
 
-def setCustomerData(data = []):
-    global customerData
-    customerData = data
+def setUserData(data = []):
+    global userData
+    userData = data
 
-def refreshCustomerData():
-    cursor.execute(f"SELECT * FROM customers WHERE customerID = {customerData[0]}")
-    setCustomerData(cursor.fetchone())
+def refreshUserData(type: str):
+    if(not(type in ['customer', 'employee'])):
+        raise ValueError("Invalid argument for `type` in function `refreshUserData()`\nProgrammer error")
+    cursor.execute(f"SELECT * FROM {type}s WHERE {type}ID = {userData[0]}")
+    setUserData(cursor.fetchone())
 
-def getCustomerData():
-    global customerData
-    return customerData
+def getUserData():
+    global userData
+    return userData
 
 ### Database initialization
 
@@ -43,24 +44,26 @@ if __name__ == "__main__":
     cursor.execute("USE baobento")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS customers(
-            customerID BIGINT PRIMARY KEY,
+            customerID BIGINT PRIMARY KEY AUTO_INCREMENT,
             firstName VARCHAR(24),
             lastName VARCHAR(24),
             number VARCHAR(14),
             email VARCHAR(48),
             password VARCHAR(32),
-            notifPref INT
+            notifPref TINYINT
         )""")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS employees(
-            employeeID BIGINT PRIMARY KEY,
+            employeeID BIGINT PRIMARY KEY AUTO_INCREMENT,
             firstName VARCHAR(24),
             lastName VARCHAR(24),
-            accessKey VARCHAR(32)
+            accessKey VARCHAR(32),
+            schedule TINYINT,
+            exceptions VARCHAR(255)
         )""")
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders(
-            orderID BIGINT PRIMARY KEY,
+            orderID BIGINT PRIMARY KEY AUTO_INCREMENT,
             customerID_FK BIGINT NULL, FOREIGN KEY (customerID_FK) REFERENCES baobento.customers(customerID),
             orderData BLOB,
             complete BOOLEAN,
@@ -86,7 +89,7 @@ if __name__ == "__main__":
         cursor.execute(f"""
             INSERT INTO customers (customerID, firstName, lastName, number, email, password, notifPref)
             VALUES
-            (1, "NULL", "CUSTOMER", "", "r", "^063/OE7*k`[smyw", 0)
+            (1, "NULL", "CUSTOMER", "", "r", "", 0)
         """)
         db.commit()
 

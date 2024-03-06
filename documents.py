@@ -364,11 +364,11 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
 
         placementTime = time.localtime(orderOverhead[0] + 1704067200)
         pickupTime = orderOverhead[1]
-        doc.add_paragraph(f"Placed: {strftime("%A", placementTime)} {ordinal(int(strftime("%d", placementTime)))} {strftime("%B, %Y at %H:%M:%S", placementTime)}")
+        doc.add_paragraph(f"Placed: {strftime("%A", placementTime)} {ordinal(int(strftime("%d", placementTime)))} {strftime("%B, %Y at %H:%M", placementTime)}")
 
         if(pickupTime != 0):
             pickupTime = time.localtime(orderOverhead[1] + 1704067200)
-            doc.add_paragraph(f"Pickup Time: {strftime("%A", pickupTime)} {ordinal(int(strftime("%d", pickupTime)))} {strftime("%B, %Y at %H:%M:%S", pickupTime)}")
+            doc.add_paragraph(f"Pickup Time: {strftime("%A", pickupTime)} {ordinal(int(strftime("%d", pickupTime)))} {strftime("%B, %Y at %H:%M", pickupTime)}")
         else:
             doc.add_paragraph(f"Pickup Time: Not yet specified")
 

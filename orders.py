@@ -5,7 +5,7 @@ from time import strftime
 # My imports
 from main import db, cursor
 from emails import sendEmail
-from functions import ordinal
+from functions import ordinal, floatToPrice
 
 modTypes = {
     1: {0: "No", 1: "Less", 2: "With", 3: "Extra"},                 # Pepper, onion, etc.
@@ -296,31 +296,52 @@ class Order():
         return self.content
 
     def returnOrder(self):
-        return f"{int(time.time() * 1000 - 1704067200000)}, {self.customerID}, '{str(self.content).replace("'", '"')}', 0, 0, {int(time.time() - 1704067200)}"
+        return f"{self.customerID}, '{str(self.content).replace("'", '"')}', 0, 0, {int(time.time() - 1704067200)}"
+    
+    def getTotalPrice(self):
+        price = 0.00
+        for t in ["appetisers", "baos", "bentos", "classics", "sides"]:
+            for c in self.content[t]:
+                price += float(getType[t][c['details'][0]]['price']) * float(c['count'])
+        return price
 
     def completeOrder(self, pickupTime: int, note: str):
         from documents import createOrderReceipt
         order = self.returnOrder()
         cursor.execute(f"""
-            INSERT INTO orders (orderID, customerID_FK, orderData, complete, paid, placementTime, pickupTime, note)
+            INSERT INTO orders (customerID_FK, orderData, complete, paid, placementTime, pickupTime, note)
             VALUES
             ({order}, {pickupTime}, '{note}')
         """)
         db.commit()
+        cursor.execute(f"SELECT orderID FROM orders")
+        orderID = cursor.fetchall()[-1][0]
         
         if(self.customerID):
-            createOrderReceipt(order = order.split(", ")[0])
+            createOrderReceipt(order = orderID)
             cursor.execute(f"SELECT email FROM customers WHERE customerID = {self.customerID}")
             email = cursor.fetchone()[0]
             placementTime = time.localtime(int(time.time()))
             pickupTime = time.localtime(pickupTime + 1704067200)
+            # This can be commented out later
+            extra = "(If you have received this email and don't know what it is you can safely ignore it. I am just a student testing out my school project and your email happened to match up with random test emails I've entered.)"
             sendEmail(email,
                         "Order Receipt",
-                        f"Thank you for your patronage! Please find your order receipt attached.\n\
-                            \nPlaced: {strftime("%A", placementTime)} {ordinal(int(strftime("%d", placementTime)))} {strftime("%B, %Y at %H:%M:%S", placementTime)}\
-                            \nPickup Time: {strftime("%A", pickupTime)} {ordinal(int(strftime("%d", pickupTime)))} {strftime("%B, %Y at %H:%M:%S", pickupTime)}",
-                            f"documents/orderReceipts/{order.split(", ")[0]}.docx")
+                        f"Thank you for your patronage! Please find your order receipt attached.\
+                            \n{extra}\
+                            \n\
+                            \nPlaced: {strftime("%A", placementTime)} {ordinal(int(strftime("%d", placementTime)))} {strftime("%B, %Y at %H:%M", placementTime)}\
+                            \nPickup Time: {strftime("%A", pickupTime)} {ordinal(int(strftime("%d", pickupTime)))} {strftime("%B, %Y at %H:%M", pickupTime)}\
+                            \nPrice: {floatToPrice(self.getTotalPrice())}",
+                            f"documents/orderReceipts/{orderID}.docx")
 
+getType = {
+    "appetisers": appetisers,
+    "baos": baos,
+    "bentos": bentos,
+    "classics": classics,
+    "sides": sides
+}
 
 o = Order()
 o.assignCustomer(1)

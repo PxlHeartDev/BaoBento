@@ -2,22 +2,23 @@
 from tkinter import *
 
 # Explicit imports
-from tkinter import messagebox, ttk
+from tkinter import messagebox
 
 # Me imports
-from main import db, cursor, setCustomerData
+from main import cursor, setUserData, getUserData
 from sql import createAccount
-
+from functions import genExceptions
 
 # Functions
 
 # Changes the current frame, displaying a messagebox if requested
-def setFrame(frame: Frame, message = '', messageTitle = '', clear = False):
+def setFrame(frame: Frame, message = '', messageTitle = '', clear = False, function = None):
     frame.tkraise()
     if(message or messageTitle):
         messagebox.showinfo(messageTitle, message)
     if(clear):
         clearBoxes()
+    if(function): function()
 
 # Clears all entry boxes
 def clearBoxes():
@@ -69,6 +70,7 @@ def createCheckbox(frames: list[Frame], row: int, column: int, span: int, text: 
         checkbox.grid(row=row, column=column, columnspan=span, padx=padx, pady=pady, sticky=sticky)                                                                                     # Don't ask, for some reason beyond my feeble comprehension the state of the checkbox can only
 #                                                                                                                                                                                         take a non-falsy initial state when its variable is '.get()'d within the command of the box...
 #                                                                                                                                                                                         Like, explicitly that. Retrieved within the command. Even if it's not used. It's like TF2 coconut.
+        variable.set(initVal)
         return checkbox
 
 
@@ -76,12 +78,12 @@ def createCheckbox(frames: list[Frame], row: int, column: int, span: int, text: 
 def customerLogin():
     cursor.execute(f"SELECT * FROM customers WHERE email = '{email.get()}'")
     data = cursor.fetchone()
-    if(not(data) or data[5] != password.get()):
+    if(not(data) or data[5] != password.get() or data == "r"):
         messagebox.showerror("Error", "Account not found or password incorrect")
         return
     setFrame(CustomerHome)
     messagebox.showinfo("Successfully logged in", f"Welcome to the Bao&Bento app, {data[1]}")
-    setCustomerData(data)
+    setUserData(data)
     clearBoxes()
 
 # Log into an employee account
@@ -94,6 +96,7 @@ def employeeLogin():
     if(data[0] != 1):
         setFrame(EmployeeMenu)
         messagebox.showinfo("Successfully logged in", f"Welcome, {data[1]}")
+        setUserData(data)
     else:
         setFrame(OwnerMenu)
         messagebox.showinfo("Successfully logged in", f"Logged in as owner\nWelcome, {data[1]}")
@@ -220,7 +223,7 @@ createButton([CustomerLogin], 9, 1, 1, "Create Account", lambda:setFrame(Custome
 
 ### Customer Home ###
 createText([CustomerHome], 1, 0, 4, "Home", "Calibri 35 bold")
-createButton([CustomerHome], 2, 0, 1, "Menu/Create an Order", lambda:createOwnerCreateOrderTopLevel(getCustomerData()[0]), "Calibri 18", ipadx=38)
+createButton([CustomerHome], 2, 0, 1, "Menu/Create an Order", lambda:createOwnerCreateOrderTopLevel(getUserData()[0]), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 3, 0, 1, "Rewards", lambda:setFrame(CustomerRewards), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 4, 0, 1, "View Orders", lambda:setFrame(CustomerOrders), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 5, 0, 1, "Settings", lambda:createCustomerSettingsToplevel(), "Calibri 18", ipadx=38)
@@ -236,23 +239,51 @@ createText([EmployeeLogin], 2, 0, 1, "Access Key: ", pady=5, padx=38)
 createEntryBox([EmployeeLogin], 2, 1, 1, accessKey, width=21, password=True)
 createButton([EmployeeLogin], 1, 3, 1, "Login", employeeLogin, "Calibri 18", padx=5)
 
-# ##### Menu #####
-# createText([EmployeeMenu], 1, 0, 4, "Employee Portal", "Calibri 35 bold")
-# createButton([EmployeeMenu], 2, 0, 1, "Schedule", lambda:setFrame(EmployeeSchedule), "Calibri 18")
-# createButton([EmployeeMenu], 3, 0, 1, "Logout", lambda:logout(), "Calibri 18")
+### Schedule ###
 
+def genSchedule():
+    createText([EmployeeSchedule], 1, 1, 4, f"Schedule for {getUserData()[1]} {getUserData()[2]}", "Calibri 35 bold")
+    createButton([EmployeeSchedule], 6, 1, 4, "Back", lambda:setFrame(EmployeeMenu), "Calibri 25 bold")
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    schedule = bin(getUserData()[4]).replace("0b", "").zfill(7)
+    schedText = []
+    for i in range(0, len(schedule)):
+        if(schedule[i] == '1'):
+            schedText.append(days[i] + 's')
+    if(not(schedText)): schedText = "No usual schedule"
+    createText([EmployeeSchedule], 2, 1, 4, "You work")
+    createText([EmployeeSchedule], 3, 0, 6, str(schedText).removeprefix('[').removesuffix(']').replace("'", ""), "Calibri 15")
+    
+    exceptions = getUserData()[5]
+    exceptText = []
+    if(not(exceptions)): return
+    for i in exceptions.split(','):
+        dmnw = str(i).split('/')
+        d, m, n, w, y = genExceptions(int(dmnw[0]), int(dmnw[1]), int(dmnw[2]), int(dmnw[3]))
+        exceptText.append(f"{w} {n}, {m} {d}")
+    createText([EmployeeSchedule], 4, 1, 4, "Exceptions:")
+    exceptFinal = ""
+    for i in exceptText:
+        exceptFinal += f"{i}\n"
+    exceptFinal.removesuffix("\n")
+    createText([EmployeeSchedule], 5, 0, 6, exceptFinal, "Calibri 15")
+
+### Menu ###
+createText([EmployeeMenu], 1, 0, 4, "Employee Portal", "Calibri 35 bold")
+createButton([EmployeeMenu], 2, 1, 2, "Schedule", lambda:setFrame(EmployeeSchedule, function=genSchedule), "Calibri 18", ipadx=20)
+createButton([EmployeeMenu], 3, 1, 2, "Logout", lambda:logout(), "Calibri 18", ipadx=20)
 
 
 ##### Owner #####
 
 ### Menu ###
 createText([OwnerMenu], 1, 0, 4, "Bao&Bento Management", "Calibri 35 bold")
-createButton([OwnerMenu], 2, 0, 4, "Create an Order", lambda:createOwnerCreateOrderTopLevel(1), "Calibri 18", ipadx=20)
-createButton([OwnerMenu], 3, 0, 4, "View Orders", lambda:createOwnerViewOrdersToplevel(), "Calibri 18", ipadx=20)
-createButton([OwnerMenu], 4, 0, 4, "Manage Customers", lambda:createOwnerManageCustomersToplevel(), "Calibri 18", ipadx=20)
-createButton([OwnerMenu], 5, 0, 4, "Manage Employees", lambda:createOwnerManageEmployeesToplevel(), "Calibri 18", ipadx=20)
-createButton([OwnerMenu], 6, 0, 4, "Reports", lambda:createOwnerReportsToplevel(), "Calibri 18", ipadx=20)
-createButton([OwnerMenu], 7, 0, 4, "Logout", lambda:logout(), "Calibri 18", ipadx=20)
+createButton([OwnerMenu], 2, 1, 2, "Create an Order", lambda:createOwnerCreateOrderTopLevel(1), "Calibri 18", ipadx=20)
+createButton([OwnerMenu], 3, 1, 2, "View Orders", lambda:createOwnerViewOrdersToplevel(), "Calibri 18", ipadx=20)
+createButton([OwnerMenu], 4, 1, 2, "Manage Customers", lambda:createOwnerManageCustomersToplevel(), "Calibri 18", ipadx=20)
+createButton([OwnerMenu], 5, 1, 2, "Manage Employees", lambda:createOwnerManageEmployeesToplevel(), "Calibri 18", ipadx=20)
+createButton([OwnerMenu], 6, 1, 2, "Reports", lambda:createOwnerReportsToplevel(), "Calibri 18", ipadx=20)
+createButton([OwnerMenu], 7, 1, 2, "Logout", lambda:logout(), "Calibri 18", ipadx=20)
 
 # Imported at the bottom to avoid a circular import error
 from toplevels import *

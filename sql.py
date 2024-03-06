@@ -1,11 +1,9 @@
 # Library imports
-import time
-import tkinter
 from tkinter import messagebox
 import re
 
 # My imports
-from main import db, cursor, refreshCustomerData, getCustomerData
+from main import db, cursor, refreshUserData, getUserData
 
 # Create a customer record
 def addCustomer(firstName: str, lastName: str, number: str, email: str, password: str, conPassword: str):
@@ -38,15 +36,11 @@ def addCustomer(firstName: str, lastName: str, number: str, email: str, password
         messagebox.showerror("Error", "Passwords do not match")
         return False
 
-    # Generate an ID as milliseconds since Jan 1 2024, 00:00 UTC+0
-    # This may not work on older devices if they do not support milliseconds
-    id = int(time.time() * 1000 - 1704067200000)
-
     # Attempt to add the customer
     cursor.execute(f"""
-        INSERT INTO customers (customerID, firstName, lastName, number, email, password, notifPref)
+        INSERT INTO customers (firstName, lastName, number, email, password, notifPref)
         VALUES
-        ({id}, "{firstName}", "{lastName}", "{number}", "{email}", "{password}", 1)
+        ("{firstName}", "{lastName}", "{number}", "{email}", "{password}", 1)
     """)
 
     # Success message
@@ -56,7 +50,7 @@ First Name: {firstName}\n\
 Last Name: {lastName}\n\
 Phone Number: {number}\n\
 Email: {email}\n\
-Password: {password}\n")
+Password: ***\n")
     return True
 
 def retrieveCustomerOrders(customerID):
@@ -70,9 +64,9 @@ def deleteCustomer(customerID, tl):
         from gui import setFrame, MainMenu, clearBoxes, destroyToplevels
         clearBoxes()
         destroyToplevels()
-        setFrame(MainMenu, "Successfully deleted account\nSorry to see you go", "Success")
         cursor.execute(f"DELETE FROM customers WHERE customerID = {customerID}")
         db.commit()
+        setFrame(MainMenu, "Successfully deleted account\nSorry to see you go", "Success")
 
 # Create a customer account
 def createAccount():
@@ -95,7 +89,7 @@ def updateNotif(customerID, sms, email, tl):
     # Update
     cursor.execute(f"UPDATE customers SET notifPref = {int(f'0b{sms}{email}', 0)} WHERE customerID = {customerID};")
     db.commit()
-    refreshCustomerData()
+    refreshUserData('customer')
     messagebox.showinfo("Success", "Successfully updated notification preferences", parent=tl)
 
 def updateDetails(customerID, firstName, lastName, number, tl):
@@ -117,7 +111,7 @@ def updateDetails(customerID, firstName, lastName, number, tl):
     # Update
     cursor.execute(f"UPDATE customers SET firstName = '{firstName}', lastName = '{lastName}', number = '{number}' WHERE customerID = {customerID};")
     db.commit()
-    refreshCustomerData()
+    refreshUserData('customer')
     messagebox.showinfo("Success", "Successfully updated personal details", parent=tl)
 
 def updateEmail(customerID, email, tl):
@@ -137,7 +131,7 @@ def updateEmail(customerID, email, tl):
     # Update
     cursor.execute(f"UPDATE customers SET email = '{email}' WHERE customerID = {customerID};")
     db.commit()
-    refreshCustomerData()
+    refreshUserData('customer')
     messagebox.showinfo("Success", "Successfully updated email", parent=tl)
     
 def updatePassword(customerID, newPass, oldPass, tl):
@@ -146,7 +140,7 @@ def updatePassword(customerID, newPass, oldPass, tl):
         messagebox.showerror("Error", "Password cannot be left blank", parent=tl)
         return
     # Invalid old password
-    if(oldPass != getCustomerData()[5]):
+    if(oldPass != getUserData()[5]):
         messagebox.showerror("Failed", "Old password is incorrect, update failed", parent=tl)
         return
     # Length check
@@ -164,5 +158,44 @@ def updatePassword(customerID, newPass, oldPass, tl):
     # Update
     cursor.execute(f"UPDATE customers SET password = '{newPass}' WHERE customerID = {customerID};")
     db.commit()
-    refreshCustomerData()
+    refreshUserData('customer')
     messagebox.showinfo("Success", "Successfully updated password", parent=tl)
+
+def addEmployee(firstName, lastName, accessKey, conAccessKey, tl):
+    values = [[firstName, "First Name", 24], [lastName, "Last Name", 24], [accessKey, "Access Key", 32]]
+    for v in values:
+        if(not v[0]):
+            messagebox.showerror("Error", "One or more field(s) left blank.\nPlease ensure all fields have been filled out.", parent=tl)
+            return False
+        if(len(v[0]) > v[2]):
+            messagebox.showerror("Error", f"{v[1]} is too long, must be less than {v[2]} characters", parent=tl)
+            return False
+        # Password check
+    if(len(accessKey) < 8):
+        messagebox.showerror("Error", "Access Key must be 8 characters or greater", parent=tl)
+        return False
+    if(accessKey != conAccessKey):
+        messagebox.showerror("Error", "Access Keys do not match", parent=tl)
+        return False
+    
+    # Since there would be very few employees in the system, and never more than one created at the same time
+    # We can simply use SQL's built-in auto-increment system to get our IDs
+
+    # Attempt to add the employee
+    cursor.execute(f"""
+        INSERT INTO employees (firstName, lastName, accessKey, schedule)
+        VALUES
+        ("{firstName}", "{lastName}", "{accessKey}", 0)
+    """)
+
+    db.commit()
+    
+    messagebox.showinfo("Success", f"Successfully added employee {firstName} {lastName}", parent=tl)
+    tl.destroy()
+
+def deleteEmployee(employeeID, tl):
+    if(messagebox.askyesno("Delete Account", "Are you sure you wish to delete this employee?", parent=tl)):
+        cursor.execute(f"DELETE FROM employees WHERE employeeID = {employeeID}")
+        db.commit()
+        messagebox.showinfo("Success", "Successfully deleted employee", parent=tl)
+        tl.destroy()
