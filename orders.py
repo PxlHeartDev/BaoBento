@@ -342,14 +342,3 @@ getType = {
     "classics": classics,
     "sides": sides
 }
-
-o = Order()
-o.assignCustomer(1)
-# o.addItem(Bao(1, 1, 2, 1, [0, 2, 3, 2, 2], ""))
-# o.addItem(Bao(1, 1, 2, 1, [1, 0, 1, 1, 0], ""))
-# o.completeOrder(1704067200)
-# o.addItem(Bento(1, 1, [1, 1, 3 ], 1, [     ], 3, [ 2, 0             ], 1, 0, ""))
-# print(Classic(1, 1, [2, 0,], 2, [1, 1], "").outputPretty())
-# print(Bento(1, 2, [2, 2, 2, 2, 1], 5, [], 6, [1, 1, 1, 1, 1], 0, 1, '').outputPretty())
-
-# o.completeOrder(1704067200, "")

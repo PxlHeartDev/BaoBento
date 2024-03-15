@@ -12,8 +12,11 @@ from functions import genExceptions
 # Functions
 
 # Changes the current frame, displaying a messagebox if requested
-def setFrame(frame: Frame, message = '', messageTitle = '', clear = False, function = None):
+def setFrame(frame: Frame, message = '', messageTitle = '', clear = False, function = None, geometry = ''):
+    BlankFrame.tkraise()
     frame.tkraise()
+    if(geometry):
+        root.geometry(geometry)
     if(message or messageTitle):
         messagebox.showinfo(messageTitle, message)
     if(clear):
@@ -81,7 +84,7 @@ def customerLogin():
     if(not(data) or data[5] != password.get() or data == "r"):
         messagebox.showerror("Error", "Account not found or password incorrect")
         return
-    setFrame(CustomerHome)
+    setFrame(CustomerHome, geometry='400x450')
     messagebox.showinfo("Successfully logged in", f"Welcome to the Bao&Bento app, {data[1]}")
     setUserData(data)
     clearBoxes()
@@ -94,11 +97,11 @@ def employeeLogin():
         messagebox.showerror("Error", "Employee not found or access key incorrect")
         return
     if(data[0] != 1):
-        setFrame(EmployeeMenu)
+        setFrame(EmployeeMenu, geometry='400x400')
         messagebox.showinfo("Successfully logged in", f"Welcome, {data[1]}")
         setUserData(data)
     else:
-        setFrame(OwnerMenu)
+        setFrame(OwnerMenu, geometry='600x550')
         messagebox.showinfo("Successfully logged in", f"Logged in as owner\nWelcome, {data[1]}")
     clearBoxes()
 
@@ -107,7 +110,7 @@ def logout():
     if(messagebox.askyesno("Log Out", "Are you sure you wish to log out?")):
         destroyToplevels()
         clearBoxes()
-        setFrame(MainMenu, "Successfully logged out", "Success")
+        setFrame(MainMenu, "Successfully logged out", "Success", geometry='400x400')
 
 def destroyToplevels():
     for widget in root.winfo_children():
@@ -121,7 +124,7 @@ def getEntryData():
 
 # Create root window
 root = Tk()
-root.geometry("1024x576")
+root.geometry("400x400")
 root.title("Bao&Bento")
 root.configure(background='#000000')
 
@@ -145,6 +148,8 @@ accessKey = StringVar()
 
 # Create frames
 MainMenu = Frame(root, bg='#000000')
+
+BlankFrame = Frame(root, bg='#000000')
 
 CustomerCreate = Frame(root, bg='#000000')
 CustomerLogin = Frame(root, bg='#000000')
@@ -172,18 +177,20 @@ CustomerCreate, CustomerLogin, CustomerHome,
 EmployeeMenu, EmployeeLogin, EmployeeSchedule,
 OwnerMenu,
 ):
-    i.grid(row=0, column=0, sticky='news')
+    i.grid(row=0, column=0, sticky='')
 #     i.grid_rowconfigure(0, weight=1)
 #     i.grid_columnconfigure(0, weight=1)
-# root.grid_rowconfigure(0, weight=1)
-# root.grid_columnconfigure(0, weight=1)
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(0, weight=1)
+
+BlankFrame.grid(row=0, column=0, sticky='', ipadx=3000,ipady=3000)
 
 #### Main menu frame #####
-createButton([CustomerCreate, CustomerLogin, EmployeeLogin], 8, 0, 4, "Main Menu", lambda:[setFrame(MainMenu), clearBoxes()], "Calibri 22", width=40, padx=8, pady=5)
+createButton([CustomerCreate, CustomerLogin, EmployeeLogin], 8, 0, 4, "Main Menu", lambda:[setFrame(MainMenu, geometry='400x400'), clearBoxes()], "Calibri 22", width=40, padx=8, pady=5)
 
 createText([MainMenu, CustomerHome], 0, 0, 3, "Bao&Bento", "Calibri 40 bold", 'center')
-createButton([MainMenu], 1, 1, 1, "Customers", lambda:setFrame(CustomerLogin, "Create or log in to a customer account", "Customer Portal"), "Calibri 25")
-createButton([MainMenu], 2, 1, 1, "Employees", lambda:setFrame(EmployeeLogin, "Your username will be your first initial then\nyour last name in all lower case (e.g. jdoe),\nand your access key will\nhave been specified by you", "Info"), "Calibri 25")
+createButton([MainMenu], 1, 1, 1, "Customers", lambda:setFrame(CustomerLogin, "Create or log in to a customer account", "Customer Portal", geometry='800x500'), "Calibri 25")
+createButton([MainMenu], 2, 1, 1, "Employees", lambda:setFrame(EmployeeLogin, "Your username will be your first initial then\nyour last name in all lower case (e.g. jdoe),\nand your access key will\nhave been specified by you", "Info", geometry='800x500'), "Calibri 25")
 createButton([MainMenu], 3, 1, 1, "Quit", lambda:root.destroy(), "Calibri 20", pady=5)
 
 ##### Customer #####
@@ -196,7 +203,7 @@ createText([CustomerCreate], 0, 0, 4, "Create Account", "Calibri 35 bold")
 # Buttons
 createButton([CustomerCreate], 1, 3, 1, "Create Account", createAccount, "Calibri 20", width=16, padx=10)
 createText([CustomerCreate], 9, 0, 1, "Got an account already?", "Calibri 16", pady=15, sticky='e')
-createButton([CustomerCreate], 9, 1, 1, "Log in", lambda:setFrame(CustomerLogin, clear=True), "Calibri 20", width=16, pady=15)
+createButton([CustomerCreate], 9, 1, 1, "Log in", lambda:setFrame(CustomerLogin, clear=True, geometry='800x500'), "Calibri 20", width=16, pady=15)
 
 # Data entry section for Customers
 createText([CustomerCreate], 1, 0, 1, "First Name: ", pady=5, padx=38)
@@ -219,13 +226,13 @@ createEntryBox([CustomerCreate], 6, 1, 1, conPassword, width=21, password=True)
 createText([CustomerLogin], 0, 0, 4, "Customer Login", "Calibri 35 bold")
 createButton([CustomerLogin], 4, 3, 1, "Login", customerLogin, "Calibri 18", rowspan=2, padx=6)
 createText([CustomerLogin], 9, 0, 1, "No account yet?", "Calibri 16", pady=5, sticky='e')
-createButton([CustomerLogin], 9, 1, 1, "Create Account", lambda:setFrame(CustomerCreate, clear=True), "Calibri 20", width=16, padx=10, rowspan=6)
+createButton([CustomerLogin], 9, 1, 1, "Create Account", lambda:setFrame(CustomerCreate, clear=True, geometry='950x700'), "Calibri 20", width=16, padx=10, rowspan=6)
 
 ### Customer Home ###
 createText([CustomerHome], 1, 0, 4, "Home", "Calibri 35 bold")
 createButton([CustomerHome], 2, 0, 1, "Menu/Create an Order", lambda:createOwnerCreateOrderTopLevel(getUserData()[0]), "Calibri 18", ipadx=38)
-createButton([CustomerHome], 3, 0, 1, "Rewards", lambda:setFrame(CustomerRewards), "Calibri 18", ipadx=38)
-createButton([CustomerHome], 4, 0, 1, "View Orders", lambda:setFrame(CustomerOrders), "Calibri 18", ipadx=38)
+# createButton([CustomerHome], 3, 0, 1, "Rewards", lambda:setFrame(CustomerRewards), "Calibri 18", ipadx=38)
+createButton([CustomerHome], 4, 0, 1, "View Orders", lambda:setFrame(CustomerOrders, geometry='700x800'), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 5, 0, 1, "Settings", lambda:createCustomerSettingsToplevel(), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 6, 0, 1, "Logout", lambda:logout(), "Calibri 18", ipadx=38)
 
@@ -243,7 +250,7 @@ createButton([EmployeeLogin], 1, 3, 1, "Login", employeeLogin, "Calibri 18", pad
 
 def genSchedule():
     createText([EmployeeSchedule], 1, 1, 4, f"Schedule for {getUserData()[1]} {getUserData()[2]}", "Calibri 35 bold")
-    createButton([EmployeeSchedule], 6, 1, 4, "Back", lambda:setFrame(EmployeeMenu), "Calibri 25 bold")
+    createButton([EmployeeSchedule], 6, 1, 4, "Back", lambda:setFrame(EmployeeMenu, geometry='400x400'), "Calibri 25 bold")
     days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     schedule = bin(getUserData()[4]).replace("0b", "").zfill(7)
     schedText = []
@@ -270,7 +277,7 @@ def genSchedule():
 
 ### Menu ###
 createText([EmployeeMenu], 1, 0, 4, "Employee Portal", "Calibri 35 bold")
-createButton([EmployeeMenu], 2, 1, 2, "Schedule", lambda:setFrame(EmployeeSchedule, function=genSchedule), "Calibri 18", ipadx=20)
+createButton([EmployeeMenu], 2, 1, 2, "Schedule", lambda:setFrame(EmployeeSchedule, function=genSchedule, geometry='600x800'), "Calibri 18", ipadx=20)
 createButton([EmployeeMenu], 3, 1, 2, "Logout", lambda:logout(), "Calibri 18", ipadx=20)
 
 
@@ -289,6 +296,6 @@ createButton([OwnerMenu], 7, 1, 2, "Logout", lambda:logout(), "Calibri 18", ipad
 from toplevels import *
 
 # Initialize the GUI!
-setFrame(MainMenu)
+setFrame(MainMenu, geometry='400x400')
 
 root.mainloop()

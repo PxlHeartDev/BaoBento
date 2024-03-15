@@ -177,9 +177,6 @@ def addEmployee(firstName, lastName, accessKey, conAccessKey, tl):
     if(accessKey != conAccessKey):
         messagebox.showerror("Error", "Access Keys do not match", parent=tl)
         return False
-    
-    # Since there would be very few employees in the system, and never more than one created at the same time
-    # We can simply use SQL's built-in auto-increment system to get our IDs
 
     # Attempt to add the employee
     cursor.execute(f"""

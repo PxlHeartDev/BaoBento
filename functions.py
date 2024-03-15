@@ -42,8 +42,8 @@ def monthToInt(month: int or str):  # type: ignore
         return month
     except ValueError:
         if(len(month) == 3):
-            return indexFromVal([m[0:3] for m in months], month.title())
-        return indexFromVal(months, month.title())
+            return indexFromVal([m[0:3] for m in months], month.title()) + 1
+        return indexFromVal(months, month.title()) + 1
     
 def isLeapYear(year: int):
     if year % 4 == 0:

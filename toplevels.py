@@ -24,6 +24,17 @@ selectedOrder = []
 def getSelectedOrder():
     return selectedOrder
 
+def createToplevel(geometry = ''):
+    tl = Toplevel(root, bg='#000000')
+    if(geometry):
+        tl.geometry(geometry)
+    frame = Frame(tl, bg='#000000')
+    frame.grid(row=0, column=0, sticky='')
+    tl.grid_rowconfigure(0, weight=1)
+    tl.grid_columnconfigure(0, weight=1)
+
+    return tl, frame
+
 # Customer settings menu
 def createCustomerSettingsToplevel():
     # Notification prefences variables
@@ -39,8 +50,7 @@ def createCustomerSettingsToplevel():
     SMSNotif.set(notifPref[0])
 
     # Create top level
-    CustomerSettings = Toplevel(root, bg='#000000')
-    CustomerSettings.geometry('1060x690')
+    CustomerSettingsToplevel, CustomerSettings = createToplevel('1060x690')
     createText([CustomerSettings], 1, 0, 4, "Settings", "Calibri 35 bold")
 
     # Notification preferences
@@ -87,7 +97,7 @@ def createCustomerSettingsToplevel():
     createButton([CustomerSettings], 10, 0, 4, "Delete Account", lambda:deleteCustomer(getUserData()[0], CustomerSettings), "Calibri 18", width=15)
     
     # Back
-    createButton([CustomerSettings], 11, 0, 4, "Back", lambda:CustomerSettings.destroy(), "Calibri 18", pady=5, width=20)
+    createButton([CustomerSettings], 11, 0, 4, "Back", lambda:CustomerSettingsToplevel.destroy(), "Calibri 18", pady=5, width=20)
 
 #############################################################################################################################
 #############################################################################################################################
@@ -96,8 +106,7 @@ def createCustomerSettingsToplevel():
 # Owner menu for creating a new order
 def createOwnerCreateOrderTopLevel(customerID = 0):
     # Create top level
-    OwnerCreateOrder = Toplevel(root, bg='#000000')
-    OwnerCreateOrder.geometry('960x690')
+    OwnerCreateOrderTopLevel, OwnerCreateOrder = createToplevel('960x690')
 
     # Title and buttons
     createText([OwnerCreateOrder], 1, 0, 4, "Create Order", "Calibri 35 bold")
@@ -116,7 +125,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
             askstring("Notes", "Please enter any notes about the order, such as allergens or specific requests", parent=OwnerCreateOrder)
         )
         messagebox.showinfo("Success", "Successfully placed order", parent=OwnerCreateOrder)
-        OwnerCreateOrder.destroy()
+        OwnerCreateOrderTopLevel.destroy()
 
     # More buttons
     createButton([OwnerCreateOrder], 7, 0, 4, "View order", lambda:createOrderReceipt(OwnerCreateOrder, o.getOrderContent()))
@@ -134,8 +143,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
     # Sub-function, creates the "Add Item" top level
     def createOwnerAddItemTopLevel(type: str):
         # Create top level
-        OwnerAddItem = Toplevel(root, bg='#000000')
-        OwnerAddItem.geometry('1200x960')
+        OwnerAddItemToplevel, OwnerAddItem = createToplevel('800x600')
 
         # Check the item type
         match(type):
@@ -203,7 +211,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                         keyFromVal(sauceDict, sauceSelected.get()),
                         note.get()))
                     messagebox.showinfo("Success", "Successfully added Appetiser to order", parent=OwnerAddItem)
-                    OwnerAddItem.destroy()
+                    OwnerAddItemToplevel.destroy()
 
                 # Overhead vars and UI stuff
                 createText([OwnerAddItem], 1, 0, 4, "Appetisers", "Calibri 35 bold")
@@ -291,7 +299,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                             [keyFromVal(modTypes[1], m.get()) for m in vars[1:]],
                             note.get()))
                     messagebox.showinfo("Success", "Successfully added Bao to order", parent=OwnerAddItem)
-                    OwnerAddItem.destroy()
+                    OwnerAddItemToplevel.destroy()
 
                 # Set all pickles to no
                 def noPickles():
@@ -324,6 +332,8 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
 
             # The rest of these won't be commented out fully. They're mostly the same with bits changed around
             case("bentos"):
+
+                OwnerAddItemToplevel.geometry('1000x1000')
 
                 # Import here because idk honestly man I'm tired, probably circular import circumvention or something
                 from orders import bentos, bentoSides, bentoPermittedSauces
@@ -421,7 +431,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                         1,
                         note.get()))
                     messagebox.showinfo("Success", "Successfully added Bento to order", parent=OwnerAddItem)
-                    OwnerAddItem.destroy()
+                    OwnerAddItemToplevel.destroy()
 
                 createText([OwnerAddItem], 1, 0, 4, "Bentos", "Calibri 35 bold")
                 oListBento = []
@@ -447,6 +457,9 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 createEntryBox([OwnerAddItem], 26, 1, 2, note, "Calibri 20", width=30, ipadx=30)
 
             case("classics"):
+
+                OwnerAddItemToplevel.geometry('1000x600')
+                
                 # Import here because idk honestly man I'm tired, probably circular import circumvention or something
                 from orders import classics, classicSides
 
@@ -526,7 +539,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                         [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars[1]],
                         note.get()))
                     messagebox.showinfo("Success", "Successfully added Classic to order", parent=OwnerAddItem)
-                    OwnerAddItem.destroy()
+                    OwnerAddItemToplevel.destroy()
 
                 createText([OwnerAddItem], 1, 0, 4, "Classics", "Calibri 35 bold")
                 oListCla = []
@@ -592,7 +605,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                         [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars],
                         note.get()))
                     messagebox.showinfo("Success", "Successfully added Side to order", parent=OwnerAddItem)
-                    OwnerAddItem.destroy()
+                    OwnerAddItemToplevel.destroy()
 
                 createText([OwnerAddItem], 1, 0, 4, "Sides", "Calibri 35 bold")
                 oListSid = []
@@ -628,8 +641,8 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
 
 # Top level that lets the owner view all orders in the system
 def createOwnerViewOrdersToplevel():
-    OwnerViewOrders = Toplevel(root, bg='#000000')
-    OwnerViewOrders.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerViewOrders))
+    OwnerViewOrdersToplevel, OwnerViewOrders = createToplevel()
+    OwnerViewOrdersToplevel.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerViewOrdersToplevel))
     createText([OwnerViewOrders], 1, 0, 4, "View Orders", "Calibri 35 bold")
 
     # Main order treeview
@@ -717,8 +730,7 @@ def createOwnerViewOrdersToplevel():
 
 # Owner customer management
 def createOwnerManageCustomersToplevel():
-    OwnerManageCustomers = Toplevel(root, bg='#000000')
-    OwnerManageCustomers.geometry('1230x500')
+    OwnerManageCustomersToplevel, OwnerManageCustomers = createToplevel('1230x500')
     createText([OwnerManageCustomers], 1, 0, 4, "Manage Customers", "Calibri 35 bold")
 
     # Treeview stuff
@@ -754,7 +766,7 @@ def customerSelected(event, tree):
 # Customer moderation, allows the owner to see orders that a specific customer has placed
 # Will soon include other stuff such as blacklisting emails and phone numbers
 def createOwnerModerationToplevel(customer: list):
-    OwnerManageIndividual = Toplevel(root, bg='#000000')
+    OwnerManageIndividualToplevel, OwnerManageIndividual = createToplevel()
     createText([OwnerManageIndividual], 1, 0, 4, "Manage Customer", "Calibri 35 bold")
     createText([OwnerManageIndividual], 2, 0, 4, f"{customer[0]}, {customer[1]} {customer[2]}", "Calibri 20 bold")
 
@@ -765,9 +777,8 @@ def createOwnerModerationToplevel(customer: list):
 
 # View orders filtered by a customer ID
 def createOwnerViewCustomerOrdersToplevel(customer):
-    OwnerViewCustomerOrders= Toplevel(root, bg='#000000')
-    OwnerViewCustomerOrders.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerViewCustomerOrders))
-    OwnerViewCustomerOrders.geometry("1500x500")
+    OwnerViewCustomerOrdersToplevel, OwnerViewCustomerOrders = createToplevel("1500x500")
+    OwnerViewCustomerOrdersToplevel.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerViewCustomerOrdersToplevel))
     createText([OwnerViewCustomerOrders], 1, 0, 4, "Order History", "Calibri 35 bold")
     createText([OwnerViewCustomerOrders], 2, 0, 4, f"{customer[0]}, {customer[1]} {customer[2]}", "Calibri 20 bold")
 
@@ -893,7 +904,7 @@ def orderSelected(event, tree):
 
 # Employee management
 def createOwnerManageEmployeesToplevel():
-    OwnerManageEmployees = Toplevel(root, bg='#000000')
+    OwnerManageEmployeesToplevel, OwnerManageEmployees = createToplevel()
     createText([OwnerManageEmployees], 1, 0, 4, "Manage Employees", "Calibri 35 bold")
 
     def refresh():
@@ -913,8 +924,7 @@ def createOwnerManageEmployeesToplevel():
 
 
     def createOwnerCreateEmployeeToplevel():
-        OwnerCreateEmployee = Toplevel(root, bg='#000000')
-        OwnerCreateEmployee.geometry('1230x500')
+        OwnerCreateEmployeeToplevel, OwnerCreateEmployee = createToplevel('700x500')
         createText([OwnerCreateEmployee], 1, 0, 4, "Add Employee", "Calibri 35 bold")
 
         firstName = StringVar()
@@ -953,7 +963,7 @@ def createOwnerManageEmployeesToplevel():
                 messagebox.showerror("Error", "Can't manage owner account", parent=OwnerManageEmployees)
 
     def createOwnerManageEmployeeToplevel(employee: list):
-        OwnerManageEmployee = Toplevel(root, bg='#000000')
+        OwnerManageEmployeeToplevel, OwnerManageEmployee = createToplevel()
         createText([OwnerManageEmployee], 1, 0, 5, "Manage Employee", "Calibri 35 bold")
         createText([OwnerManageEmployee], 2, 0, 5, f"{employee[0]}, {employee[1]} {employee[2]}", "Calibri 20 bold")
 
@@ -966,13 +976,13 @@ def createOwnerManageEmployeesToplevel():
         createText([OwnerManageEmployee], 3, 1, 1, "Usual schedule", "Calibri 18")
         createText([OwnerManageEmployee], 3, 2, 4, "Exceptions (Click any to delete)", "Calibri 18")
         # Checkboxes
-        createCheckbox([OwnerManageEmployee], 4, 1, 1, "Mondays",    schedVars[0], initVal = sched[0])
-        createCheckbox([OwnerManageEmployee], 5, 1, 1, "Tuesdays",   schedVars[1], initVal = sched[1])
-        createCheckbox([OwnerManageEmployee], 6, 1, 1, "Wednesdays", schedVars[2], initVal = sched[2])
-        createCheckbox([OwnerManageEmployee], 7, 1, 1, "Thursdays",  schedVars[3], initVal = sched[3])
-        createCheckbox([OwnerManageEmployee], 8, 1, 1, "Fridays",    schedVars[4], initVal = sched[4])
-        createCheckbox([OwnerManageEmployee], 9, 1, 1, "Saturdays",  schedVars[5], initVal = sched[5])
-        createCheckbox([OwnerManageEmployee], 10, 1, 1, "Sundays",   schedVars[6], initVal = sched[6])
+        createCheckbox([OwnerManageEmployee], 4, 1, 1,  "Mondays",    schedVars[0], initVal = sched[0])
+        createCheckbox([OwnerManageEmployee], 5, 1, 1,  "Tuesdays",   schedVars[1], initVal = sched[1])
+        createCheckbox([OwnerManageEmployee], 6, 1, 1,  "Wednesdays", schedVars[2], initVal = sched[2])
+        createCheckbox([OwnerManageEmployee], 7, 1, 1,  "Thursdays",  schedVars[3], initVal = sched[3])
+        createCheckbox([OwnerManageEmployee], 8, 1, 1,  "Fridays",    schedVars[4], initVal = sched[4])
+        createCheckbox([OwnerManageEmployee], 9, 1, 1,  "Saturdays",  schedVars[5], initVal = sched[5])
+        createCheckbox([OwnerManageEmployee], 10, 1, 1, "Sundays",    schedVars[6], initVal = sched[6])
 
         # Exceptions treeview
         columns = ("d", "m", "y", "w")
@@ -1102,8 +1112,8 @@ def createOwnerReportsToplevel():
     from orders import appetisers, baos, bentos, classics, sides
 
     # Create toplevel
-    OwnerReports = Toplevel(root, bg='#000000')
-    OwnerReports.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerReports))
+    OwnerReportsToplevel, OwnerReports = createToplevel('950x300')
+    OwnerReportsToplevel.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerReportsToplevel))
     createText([OwnerReports], 1, 0, 4, "Reports", "Calibri 35 bold")
 
     # Dropdown data
