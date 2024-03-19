@@ -336,11 +336,11 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 OwnerAddItemToplevel.geometry('1000x1000')
 
                 # Import here because idk honestly man I'm tired, probably circular import circumvention or something
-                from orders import bentos, bentoSides, bentoPermittedSauces
+                from orders import bentos, bentoSides, bentoPermittedSauces, sides
 
                 # Store the auto-generated UI elements and variables in a list so they can be easily accessed and cleared out
-                UIElements = [[], [], []]
-                vars = [[], [], []]
+                UIElements = [[], [], [], []]
+                vars = [[], [], [], []]
                 
                 # Sub-sub-function, runs when the bento in the dropdown is changed
                 def bentoChanged(*args):
@@ -381,10 +381,10 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                     UIElements[0].append(createDropdown([OwnerAddItem], 21, 1, 1, oListBento, bentoSideSelected[1], "Calibri 15 bold", bentoSides[bentoStuff['side2'][0]]['name'], 24))
 
                     if(bentoStuff['sauce'] != -1):
-                        oListSauce = []
+                        oListSauce = ["No sauce"]
                         for i in bentoPermittedSauces:
-                            oListSauce.append(sauceDict[i])
-                        UIElements[0].append(createDropdown([OwnerAddItem], 5, 2, 1, oListSauce, sauceSelected, "Calibri 15 bold", sauceDict[bentoStuff['sauce']], 24, 5))
+                            oListSauce.append(sides[i]['name'])
+                        UIElements[0].append(createDropdown([OwnerAddItem], 5, 2, 2, oListSauce, sauceSelected, "Calibri 15 bold", sauceDict[bentoStuff['sauce']], 24, 5))
                     else:
                         sauceSelected.set("")
                         UIElements[0].append(createText([OwnerAddItem], 5, 2, 2, "No sauce", "Calibri 20"))
@@ -416,6 +416,30 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                         UIElements[side].append(createText([OwnerAddItem], (side*10)+1+i, 2, 1, f"{m['name']}: ", "Calibri 15"))
                         UIElements[side].append(createDropdown([OwnerAddItem], (side*10)+1+i, 3, 1, oListMod, vars[side][i], "Calibri 13 bold", modTypes[m['modType']][m['default']], 18))
 
+                def sauceChanged(*args):
+                    # Ignore if it is the init value
+                    if('selected' in sauceSelected.get()): return
+                    # Get the side details in full
+                    sauceStuff = sides[keyFromVal(sides, sauceSelected.get())]
+                    # Re-used options list
+                    oListSauceMod = []
+                    
+                    # Destroy each auto-generated UI element
+                    [e.destroy() for e in UIElements[3]]
+                    
+                    # Clear the lists
+                    UIElements[3].clear()
+                    vars[3].clear()
+
+                    for i in range(0, len(sauceStuff['mod'])):
+                        m = sauceStuff['mod'][i]
+                        oListSauceMod.clear()
+                        vars[3].append(StringVar())
+                        for v in modTypes[m['modType']].values():
+                            oListSauceMod.append(v)
+                        UIElements[3].append(createText([OwnerAddItem], 6+i, 2, 1, f"{m['name']}: ", "Calibri 15"))
+                        UIElements[3].append(createDropdown([OwnerAddItem], 6+i, 3, 1, oListSauceMod, vars[3][i], "Calibri 13 bold", modTypes[m['modType']][m['default']], 18))
+
                 def addBento():
                     o.addItem(Bento(
                         count.get(),
@@ -427,8 +451,10 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
 
                         keyFromVal(bentoSides, bentoSideSelected[1].get()),
                         [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars[2]],
-                        keyFromValPrecise(sauceDict, sauceSelected.get()),
-                        1,
+
+                        keyFromVal(sides, sauceSelected.get()) if sauceSelected.get() != "No sauce" else 0,
+                        [keyFromVal(modTypes[keyFromVal(modTypes, m.get())], m.get()) for m in vars[3]],
+
                         note.get()))
                     messagebox.showinfo("Success", "Successfully added Bento to order", parent=OwnerAddItem)
                     OwnerAddItemToplevel.destroy()
@@ -443,6 +469,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 bentoSideSelected[0].trace_add("write", lambda x,y,z:bentoSideChanged(1))
                 bentoSideSelected[1].trace_add("write", lambda x,y,z:bentoSideChanged(2))
                 sauceSelected = StringVar()
+                sauceSelected.trace_add("write", sauceChanged)
                 createText([OwnerAddItem], 2, 0, 1, "Bento: ")
                 createDropdown([OwnerAddItem], 2, 1, 1, oListBento, bentoSelected, "Calibri 15 bold", "No bento selected", 24)
 
@@ -561,6 +588,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 note = StringVar()
                 createText([OwnerAddItem], 12, 0, 1, "Notes: ", "Calibri 20", pady=10)
                 createEntryBox([OwnerAddItem], 12, 1, 2, note, "Calibri 20", width=30, ipadx=30)
+                
             case("sides"):
 
                 # Import here because idk honestly man I'm tired, probably circular import circumvention or something

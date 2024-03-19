@@ -138,7 +138,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
                 mods.append(modFull)
             items.append((
                 f'{d['count']} {appetisers[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
-                f'{sauceDict[d['details'][2]]}',
+                f'{sauceDict[d['details'][2]].removesuffix(' [Veg]').removesuffix(' [Vgn]')}',
                 mods,
                 int(d['count']) * appetisers[d['details'][0]]['price'],
                 d['note']
@@ -170,7 +170,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
         for d in orderData['baos']:
             items.append((
                 f'{d['count']} {baos[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
-                f'{f"{modTypes[5][d['details'][2]]} " if d['details'][1] != 0 else ""}{sauceDict[d['details'][1]]}', 
+                f'{f"{modTypes[5][d['details'][2]]} " if d['details'][1] != 0 else ""}{sauceDict[d['details'][1]].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
                 [f'{modTypes[1][d['details'][3][i]]} {picklesDict[i + 1]}' for i in range(0, 5)],
                 int(d['count']) * baos[d['details'][0]]['price'],
                 d['note']
@@ -222,14 +222,25 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
                 s2modName = bentoSides[d['details'][4]]['mod'][i]['name']
                 s2mods.append(f'{s2modMod} {s2modName}')
 
+            sauceModFinal = ''
+            for i in range(0, len(d['details'][7])):
+                sauceModMod = modTypes[sides[d['details'][6]]['mod'][i]['modType']][d['details'][7][i]]  
+                sauceModName = sides[d['details'][6]]['mod'][i]['name']
+
+                sauceModFull = f'{sauceModMod} {sauceModName}'
+                if(sauceModFull == "Normal Hot"): continue
+                if(sauceModFull == "No Onion"): continue
+                sauceModFinal += f"{sauceModName}, "
+            sauceModFinal = sauceModFinal.removesuffix(', ')
+
             items.append((
                 f'{d['count']} {bentos[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
-                f'{sauceDict[d['details'][6]]}',
-                '',
+                f'{sauceDict[d['details'][6]].removesuffix(' [Veg]').removesuffix(' [Vgn]')}',
+                sauceModFinal,
                 mods,
-                f'{bentoSides[d['details'][2]]['name']}',
+                f'{bentoSides[d['details'][2]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}',
                 s1mods,
-                f'{bentoSides[d['details'][4]]['name']}',
+                f'{bentoSides[d['details'][4]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}',
                 s2mods,
                 int(d['count']) * bentos[d['details'][0]]['price'],
                 d['note']
@@ -248,7 +259,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
             totalPrice += price
             row = table.add_row().cells
             row[0].text = qname
-            row[1].text = f'{sauce}{f" ({sauceMod})" if sauceMod else ""}'
+            row[1].text = f'{sauce}{f"\n({sauceMod})" if sauceMod else ""}'
             for m in mod:
                 row[2].text += f'{m}\n'
             row[2].text = row[2].text.removesuffix('\n')
@@ -290,7 +301,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
             items.append((
                 f'{d['count']} {classics[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
                 mods,
-                f'{classicSides[d['details'][2]]['name']}',
+                f'{classicSides[d['details'][2]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}',
                 sMods,
                 int(d['count']) * classics[d['details'][0]]['price'],
                 d['note']

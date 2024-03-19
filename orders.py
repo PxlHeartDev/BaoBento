@@ -135,8 +135,8 @@ class Bao:
         return final
 
 
-
-bentoPermittedSauces = [0, 4, 10, 11, 12]
+# This takes from sides instead of the sauces
+bentoPermittedSauces = [4, 5, 6, 7, 8, 9, 10]
 bentos = {
     1:  {'name': 'Salted Chilli Chicken',    'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Crispy shredded chicken with sliced pepper and onion, all mixed with spicy salt and chilli flakes"},   
     2:  {'name': 'Honey Chilli Chicken',     'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Shredded chicken with sliced pepper and onion tossed in our sweet chilli sauce"},     
@@ -253,10 +253,12 @@ sides = {
     4:  {'name': 'Curry [Veg]',                 'price': 2.00, 'mod': [hotCurry, onion[1]],            'desc': "Our signature mildly-spicy curry"},
     5:  {'name': 'Small Curry [Veg]',           'price': 1.50, 'mod': [hotCurry, onion[1]],            'desc': "Our signature mildly-spicy curry"},
     6:  {'name': 'Korean Sauce [Veg]',          'price': 2.00, 'mod': [],                              'desc': "A tub of our tangy Korean barbecue sauce"},
-    7:  {'name': 'Sweet Chilli Sauce [Vgn]',    'price': 2.00, 'mod': [],                              'desc': "A small tub of our sweet chilli sauce"},
+    7:  {'name': 'Sweet Chilli Sauce [Vgn]',    'price': 2.00, 'mod': [hotCurry],                      'desc': "A small tub of our sweet chilli sauce"},
     8:  {'name': 'Soy Sauce [Vgn]',             'price': 2.00, 'mod': [],                              'desc': "A small tub of our black vinegar and soy sauce"},
-    9:  {'name': 'Coke [Vgn]',                  'price': 2.00, 'mod': [],                              'desc': "A 330ml can of Coca-Cola"},
-    10: {'name': 'Water [Vgn]',                 'price': 2.00, 'mod': [],                              'desc': "A 500ml bottle of still water"},
+    9:  {'name': 'Peking Sauce [Vgn]',          'price': 2.00, 'mod': [hotCurry],                      'desc': "A small tub of our hot and spicy peking sauce"},
+    10: {'name': 'Sweet and Sour Sauce [Vgn]',  'price': 2.00, 'mod': [hotCurry],                      'desc': "A small tub of our deliciously tangy sweet and sour sauce"},
+    11: {'name': 'Coke [Vgn]',                  'price': 2.00, 'mod': [],                              'desc': "A 330ml can of Coca-Cola"},
+    12: {'name': 'Water [Vgn]',                 'price': 2.00, 'mod': [],                              'desc': "A 500ml bottle of still water"},
 }
 class Side():
     def __init__(self, count: int, side: int, sideMod: list[int], note: str):
