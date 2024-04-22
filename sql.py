@@ -27,6 +27,15 @@ def addCustomer(firstName: str, lastName: str, number: str, email: str, password
     if(not(re.match(r"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$", number))):
         messagebox.showerror("Error", "Invalid phone number")
         return False
+    
+    # Check if already in use
+    cursor.execute(f"SELECT * FROM customers WHERE email = '{email}'")
+    data = cursor.fetchone()
+    if(data): messagebox.showerror("Error", "Email already in use"); return
+
+    cursor.execute(f"SELECT * FROM customers WHERE number = '{number}'")
+    data = cursor.fetchone()
+    if(data): messagebox.showerror("Error", "Phone number already in use"); return
 
     # Password check
     if(len(password) < 8):
@@ -64,26 +73,20 @@ def deleteCustomer(customerID, tl):
         from gui import setFrame, MainMenu, clearBoxes, destroyToplevels
         clearBoxes()
         destroyToplevels()
-        cursor.execute(f"DELETE FROM customers WHERE customerID = {customerID}")
+        cursor.execute(f"UPDATE customers SET firstName = '', lastName = '', number = '', email = '', password = '', notifPref = 0 WHERE customerID = {customerID}")
         db.commit()
         setFrame(MainMenu, "Successfully deleted account\nSorry to see you go", "Success")
 
-# Create a customer account
+# Create a customer accountR
 def createAccount():
     from gui import getEntryData, customerLogin
     entryData = getEntryData()
-    # Check the dropdown status
-    cursor.execute(f"SELECT * FROM customers WHERE email = '{entryData[3]}'")
-    data = cursor.fetchone()
-    if(data): messagebox.showerror("Error", "Email already in use"); return
-
-    cursor.execute(f"SELECT * FROM customers WHERE number = '{entryData[2]}'")
-    data = cursor.fetchone()
-    if(data): messagebox.showerror("Error", "Phone number already in use"); return
 
     if(addCustomer(*entryData)):
         customerLogin()
         db.commit()
+
+
 
 def updateNotif(customerID, sms, email, tl):
     # Update
@@ -120,7 +123,7 @@ def updateEmail(customerID, email, tl):
         messagebox.showerror("Error", "Email field left blank.\nPlease ensure the field has been filled out.", parent=tl)
         return
     # Length check
-    if(len(len(email)) > 48):
+    if(len(email) > 48):
         messagebox.showerror("Error", "Email is too long, must be less than 48 characters", parent=tl)
         return
     # Simple email regex check

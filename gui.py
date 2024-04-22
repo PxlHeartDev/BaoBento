@@ -15,12 +15,9 @@ from functions import genExceptions
 def setFrame(frame: Frame, message = '', messageTitle = '', clear = False, function = None, geometry = ''):
     BlankFrame.tkraise()
     frame.tkraise()
-    if(geometry):
-        root.geometry(geometry)
-    if(message or messageTitle):
-        messagebox.showinfo(messageTitle, message)
-    if(clear):
-        clearBoxes()
+    if(geometry): root.geometry(geometry)
+    if(message or messageTitle): messagebox.showinfo(messageTitle, message)
+    if(clear): clearBoxes()
     if(function): function()
 
 # Clears all entry boxes
@@ -79,11 +76,16 @@ def createCheckbox(frames: list[Frame], row: int, column: int, span: int, text: 
 
 # Log into an existing customer account
 def customerLogin():
+    if(email.get() == "" or password.get() == ""):
+        messagebox.showerror("Error", "Field(s) cannot be blank")
+        return
+    
     cursor.execute(f"SELECT * FROM customers WHERE email = '{email.get()}'")
     data = cursor.fetchone()
     if(not(data) or data[5] != password.get() or data == "r"):
         messagebox.showerror("Error", "Account not found or password incorrect")
         return
+    
     setFrame(CustomerHome, geometry='400x450')
     messagebox.showinfo("Successfully logged in", f"Welcome to the Bao&Bento app, {data[1]}")
     setUserData(data)
@@ -232,7 +234,7 @@ createButton([CustomerLogin], 9, 1, 1, "Create Account", lambda:setFrame(Custome
 createText([CustomerHome], 1, 0, 4, "Home", "Calibri 35 bold")
 createButton([CustomerHome], 2, 0, 1, "Menu/Create an Order", lambda:createOwnerCreateOrderTopLevel(getUserData()[0]), "Calibri 18", ipadx=38)
 # createButton([CustomerHome], 3, 0, 1, "Rewards", lambda:setFrame(CustomerRewards), "Calibri 18", ipadx=38)
-createButton([CustomerHome], 4, 0, 1, "View Orders", lambda:setFrame(CustomerOrders, geometry='700x800'), "Calibri 18", ipadx=38)
+createButton([CustomerHome], 4, 0, 1, "View Orders", lambda:createCustomerViewOrdersToplevel(), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 5, 0, 1, "Settings", lambda:createCustomerSettingsToplevel(), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 6, 0, 1, "Logout", lambda:logout(), "Calibri 18", ipadx=38)
 

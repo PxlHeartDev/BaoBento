@@ -35,6 +35,64 @@ def createToplevel(geometry = ''):
 
     return tl, frame
 
+
+# Customer view orders menu
+def createCustomerViewOrdersToplevel():
+    CustomerViewOrdersToplevel, CustomerViewOrders = createToplevel('800x500')
+    createText([CustomerViewOrders], 1, 1, 2, "Your Orders", "Calibri 35 bold")
+
+    # Main order treeview
+    columns = ("oid", "data", "com", "paid", "ptime", "pktime")
+    headings = ("Order ID", "Order Data", "Completed?", "Paid?", "Placement Time", "Pickup Time")
+    widths = (100, 100, 80, 80, 180, 180)
+
+    treeview = ttk.Treeview(CustomerViewOrders, columns=columns, show='headings', padding=1, selectmode='browse')
+    treeview.grid(row = 2, column = 0, columnspan=4, padx=10)
+
+    # Populate the main order treeview 
+    def populate(filter=""):
+        # Delete all existing rows
+        treeview.delete(*treeview.get_children())
+        
+        # Get orders
+        dat = getUserData()
+        cursor.execute(f"""SELECT * FROM orders WHERE customerID_FK = {dat[0]} {filter}""")
+        data = cursor.fetchall()
+
+        for d in data:
+            # Item count solving
+            itemCount = sum([sum([i['count'] for i in v]) for v in json.loads(d[2]).values()])
+            treeview.insert("", END, values=[
+                d[0],
+                f"{itemCount} item{'s' if itemCount > 1 else ''}", 
+                "Yes" if d[3] else "No", "Yes" if d[4] else "No", 
+                strftime("%a, %d %b %Y %H:%M", time.localtime(d[5] + 1704067200)), 
+                strftime("%a, %d %b %Y %H:%M", time.localtime(d[6] + 1704067200))
+            ])
+            # Bind the select event to the orderSelected() function
+            treeview.bind('<<TreeviewSelect>>', lambda event: customerOrderSelected(event))
+        for c, h, w in zip(columns, headings, widths):
+            treeview.column(c, anchor='center', width=w)
+            treeview.heading(c, text=h, anchor='center')
+
+    createButton([CustomerViewOrders], 3, 1, 1, "Active", lambda:populate("AND complete = 0"))
+    createButton([CustomerViewOrders], 3, 2, 1, "Complete", lambda:populate("AND complete = 1"))
+
+    populate("AND complete = 0")
+
+    UIElements = []
+
+    def customerOrderSelected(event):
+        for e in UIElements:
+            e.destroy()
+        UIElements.clear()
+        selectedItems = event.widget.selection()
+        if selectedItems:
+            item = selectedItems[0]
+            order = event.widget.item(item)['values'][0]
+            UIElements.append(createButton([CustomerViewOrders], 4, 1, 2, "View Receipt", lambda:createOrderReceipt(order = order, openAnyway = True)))
+
+
 # Customer settings menu
 def createCustomerSettingsToplevel():
     # Notification prefences variables
@@ -118,12 +176,23 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
 
     # Complete the order, asking for some details
     def completeOrder():
+        if(o.isBlank()):
+            messagebox.showerror("Error", "Cannot place a blank order, try adding a few items first!", parent=OwnerCreateOrder)
+            return
+
         # Ask to assign a customer ID if it's the owner placing the order
-        if(customerID == 1): o.assignCustomer(askinteger("Customer ID", "Enter a customer ID to assign the order to. Use 1 if none.", initialvalue=1, parent=OwnerCreateOrder))
-        o.completeOrder(
-            askinteger("Pickup time", "Please enter a pickup time in seconds since Jan 1 2024, 00:00 UTC+0", parent=OwnerCreateOrder),
-            askstring("Notes", "Please enter any notes about the order, such as allergens or specific requests", parent=OwnerCreateOrder)
-        )
+        if(customerID == 1): 
+            id = askinteger("Customer ID", "Enter a customer ID to assign the order to. Use 1 if none.", initialvalue=1, parent=OwnerCreateOrder)
+            if(id == None): return
+            o.assignCustomer(id)
+
+        pickupTime = askinteger("Pickup time", "Please enter a pickup time in seconds since Jan 1 2024, 00:00 UTC+0", parent=OwnerCreateOrder)
+        if(pickupTime == None): return
+
+        note = askstring("Notes", "Please enter any notes about the order, such as allergens or specific requests", parent=OwnerCreateOrder)
+        if(note == None): return
+
+        o.completeOrder(pickupTime, note)
         messagebox.showinfo("Success", "Successfully placed order", parent=OwnerCreateOrder)
         OwnerCreateOrderTopLevel.destroy()
 
@@ -173,7 +242,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                     vars.clear()
 
                     # Item description
-                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{appStuff['desc']}', 'Calibri 15'))
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{floatToPrice(appStuff['price'])} - {appStuff['desc']}', 'Calibri 15'))
 
                     # Generation modifier dropdown(s)
                     for i in range(0, len(appStuff['mod'])):
@@ -266,7 +335,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                     vars.clear()
 
                     # Item description
-                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{baoStuff['desc']}', 'Calibri 15'))
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{floatToPrice(baoStuff['price'])} - {baoStuff['desc']}', 'Calibri 15'))
 
                     # Add a new var to the list
                     vars.append(StringVar())
@@ -292,7 +361,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 # Add the item to the order
                 def addBao():
                     o.addItem(Bao
-                            (1, 
+                            (count.get(), 
                             keyFromVal(baos, baoSelected.get()),
                             keyFromVal(sauceDict, sauceSelected.get()),
                             keyFromVal(modTypes[1], vars[0].get()),
@@ -333,7 +402,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
             # The rest of these won't be commented out fully. They're mostly the same with bits changed around
             case("bentos"):
 
-                OwnerAddItemToplevel.geometry('1000x1000')
+                OwnerAddItemToplevel.geometry('1000x920')
 
                 # Import here because idk honestly man I'm tired, probably circular import circumvention or something
                 from orders import bentos, bentoSides, bentoPermittedSauces, sides
@@ -360,7 +429,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                     UIElements[0].clear()
                     vars[0].clear()
 
-                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{bentoStuff['desc']}', 'Calibri 15'))
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{floatToPrice(bentoStuff['price'])} - {bentoStuff['desc']}', 'Calibri 15'))
 
                     for i in range(0, len(bentoStuff['mod'])):
                         m = bentoStuff['mod'][i]
@@ -510,7 +579,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                     UIElements[0].clear()
                     vars[0].clear()
 
-                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{classicStuff['desc']}', 'Calibri 15'))
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{floatToPrice(classicStuff['price'])} - {classicStuff['desc']}', 'Calibri 15'))
 
                     for i in range(0, len(classicStuff['mod'])):
                         m = classicStuff['mod'][i]
@@ -613,7 +682,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                     UIElements.clear()
                     vars.clear()
 
-                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{sideStuff['desc']}', 'Calibri 15'))
+                    UIElements.append(createText([OwnerAddItem], 3, 0, 4, f'{floatToPrice(sideStuff['price'])} - {sideStuff['desc']}', 'Calibri 15'))
 
                     for i in range(0, len(sideStuff['mod'])):
                         m = sideStuff['mod'][i]
@@ -692,6 +761,9 @@ def createOwnerViewOrdersToplevel():
     def populate(filter=""):
         # Delete all existing rows
         treeview.delete(*treeview.get_children())
+
+        global selectedOrder
+        selectedOrder = []
         
         # Get orders
         cursor.execute(f"""SELECT * FROM orders {filter}""")
@@ -737,7 +809,7 @@ def createOwnerViewOrdersToplevel():
     createText([OwnerViewOrders], 4, 0, 1, "Filter:", pady=8)
     createButton([OwnerViewOrders], 4, 1, 1, "All", command=lambda: populate(""), font=buttonFont)
     createButton([OwnerViewOrders], 4, 2, 1, "Active", command=lambda: populate("WHERE complete = 0"), font=buttonFont)
-    createButton([OwnerViewOrders], 4, 3, 1, "Complete", command=lambda: populate("WHERE complete = 1"), font=buttonFont)
+    createButton([OwnerViewOrders], 4, 3, 1, "Complete", command=lambda: populate("WHERE complete = 1 AND paid = 1"), font=buttonFont)
     createButton([OwnerViewOrders], 4, 4, 1, "Outstanding", command=lambda: populate("WHERE complete = 1 AND paid = 0"), font=buttonFont)
 
     createButton([OwnerViewOrders], 4, 5, 1, "Mark Complete", command=markComplete, font=buttonFont)
@@ -807,33 +879,84 @@ def createOwnerModerationToplevel(customer: list):
 def createOwnerViewCustomerOrdersToplevel(customer):
     OwnerViewCustomerOrdersToplevel, OwnerViewCustomerOrders = createToplevel("1500x500")
     OwnerViewCustomerOrdersToplevel.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerViewCustomerOrdersToplevel))
-    createText([OwnerViewCustomerOrders], 1, 0, 4, "Order History", "Calibri 35 bold")
-    createText([OwnerViewCustomerOrders], 2, 0, 4, f"{customer[0]}, {customer[1]} {customer[2]}", "Calibri 20 bold")
-
-    # Get customer's orders
-    data = retrieveCustomerOrders(customer[0])
+    createText([OwnerViewCustomerOrders], 1, 0, 6, "Order History", "Calibri 35 bold")
+    createText([OwnerViewCustomerOrders], 2, 0, 6, f"{customer[0]}, {customer[1]} {customer[2]}", "Calibri 20 bold")
 
     # Treeview stuff
     columns = ("oid", "data", "com", "paid", "ptime", "pktime")
     headings = ("Order ID", "Order Data", "Completed?", "Paid?", "Placement Time", "Pickup Time")
     widths = (100, 100, 80, 80, 180, 180)
     treeview = ttk.Treeview(OwnerViewCustomerOrders, columns=columns, show='headings', padding=1, selectmode='browse')
+    treeview.grid(row=3, column=1, columnspan=4, padx=10)
 
     orderTreeview = ttk.Treeview(OwnerViewCustomerOrders, padding=3, columns=["title", "price"], show='headings')
-    orderTreeview.grid(row=3, column=1, padx=10, columnspan=2)
+    orderTreeview.grid(row=3, column=5, padx=10, columnspan=2)
     orderTreeview.column("title", anchor='w', width=400)
     orderTreeview.column("price", anchor='w', width=100)
     orderTreeview.heading("title", text='No order selected', anchor='center')
 
-    # More treeview stuff
-    for d in data:
-        itemCount = sum([sum([i['count'] for i in v]) for v in json.loads(d[2]).values()])
-        treeview.insert("", END, values=[d[0], f"{itemCount} item{'s' if itemCount > 1 else ''}", "Yes" if d[3] else "No", "Yes" if d[4] else "No",  strftime("%a, %d %b %Y %H:%M", time.localtime(d[5] + 1704067200)), strftime("%a, %d %b %Y %H:%M:%S", time.localtime(d[6] + 1704067200))])
-        treeview.bind('<<TreeviewSelect>>', lambda event: orderSelected(event, orderTreeview))
-    for c, h, w in zip(columns, headings, widths):
-        treeview.column(c, anchor='center', width=w)
-        treeview.heading(c, text=h, anchor='center')
-    treeview.grid(row = 3, column = 0, padx=10)
+
+    def populate(filter = ""):
+        # Delete all existing rows
+        treeview.delete(*treeview.get_children())
+
+        global selectedOrder
+        selectedOrder = []
+        
+        # Get orders
+        cursor.execute(f"""SELECT * FROM orders WHERE customerID_FK = {customer[0]} {filter}""")
+        data = cursor.fetchall()
+
+        for d in data:
+            # Item count solving
+            itemCount = sum([sum([i['count'] for i in v]) for v in json.loads(d[2]).values()])
+            treeview.insert("", END, values=[
+                d[0],
+                f"{itemCount} item{'s' if itemCount > 1 else ''}", 
+                "Yes" if d[3] else "No", "Yes" if d[4] else "No", 
+                strftime("%a, %d %b %Y %H:%M", time.localtime(d[5] + 1704067200)), 
+                strftime("%a, %d %b %Y %H:%M", time.localtime(d[6] + 1704067200))
+            ])
+            # Bind the select event to the orderSelected() function
+            treeview.bind('<<TreeviewSelect>>', lambda event: orderSelected(event, orderTreeview))
+        for c, h, w in zip(columns, headings, widths):
+            treeview.column(c, anchor='center', width=w)
+            treeview.heading(c, text=h, anchor='center')
+
+
+        # Mark or unmark an order as complete in the system
+    def markComplete():
+        global selectedOrder
+        if(not(selectedOrder)):
+            messagebox.showerror("Error", "No order selected", parent=treeview)
+            return
+        cursor.execute(f"UPDATE orders SET complete = {0 if selectedOrder[2] == 'Yes' else 1} WHERE orderID = {selectedOrder[0]};")
+        db.commit()
+        
+    # Mark or unmark an order as paid for in the system
+    def markPaid():
+        global selectedOrder
+        if(not(selectedOrder)):
+            messagebox.showerror("Error", "No order selected", parent=treeview)
+            return
+        cursor.execute(f"UPDATE orders SET paid = {0 if selectedOrder[3] == 'Yes' else 1} WHERE orderID = {selectedOrder[0]};")
+        db.commit()
+
+    buttonFont = 'Calibri 18'
+    
+    createText([OwnerViewCustomerOrders], 4, 0, 1, "Filter:", pady=8)
+    createButton([OwnerViewCustomerOrders], 4, 1, 1, "All", command=lambda: populate(""), font=buttonFont)
+    createButton([OwnerViewCustomerOrders], 4, 2, 1, "Active", command=lambda: populate("AND complete = 0"), font=buttonFont)
+    createButton([OwnerViewCustomerOrders], 4, 3, 1, "Complete", command=lambda: populate("AND complete = 1 AND paid = 1"), font=buttonFont)
+    createButton([OwnerViewCustomerOrders], 4, 4, 1, "Outstanding", command=lambda: populate("AND complete = 1 AND paid = 0"), font=buttonFont)
+
+    createButton([OwnerViewCustomerOrders], 4, 5, 1, "Mark Complete", command=markComplete, font=buttonFont)
+    createButton([OwnerViewCustomerOrders], 4, 6, 1, "Mark Paid", command=markPaid, font=buttonFont)
+    createText([OwnerViewCustomerOrders], 5, 5, 2, "Make sure to check that you have the right\norder and to refresh after marking orders!", font="Calibri 10")
+
+    createButton([OwnerViewCustomerOrders], 5, 2, 2, "View Order Receipt", command=lambda:createOrderReceipt(OwnerViewCustomerOrders), font=buttonFont, width=20)
+
+    populate()
 
 #############################################################################################################################
 
@@ -901,6 +1024,9 @@ def orderSelected(event, tree):
                         side2 = tree.insert(bentos, END, values=[f"            {text['side2']}"])
                         for m in text['side2Mod']:
                             tree.insert(side2, END, values=[f"                  {m}"])
+                        sauce = tree.insert(bentos, END, values=[f"            {text['sauce']}"])
+                        for m in text['sauceMod']:
+                            tree.insert(sauce, END, values=[f"                  {m}"])
                         totalPrice += float(text['price'])
                     case("classics"):
                         classicItem = Classic(jtem['count'], *jtem['details'], jtem['note'])
@@ -970,7 +1096,7 @@ def createOwnerManageEmployeesToplevel():
         createEntryBox([OwnerCreateEmployee], 5, 1, 1, conAccessKey, width=21)
 
         def confirmAddEmployee():
-            addEmployee(firstName.get(), lastName.get(), accessKey.get(), conAccessKey.get(), OwnerCreateEmployee)
+            addEmployee(firstName.get(), lastName.get(), accessKey.get(), conAccessKey.get(), OwnerCreateEmployeeToplevel)
             refresh()
         
         createButton([OwnerCreateEmployee], 6, 0, 2, "Create Profile", confirmAddEmployee)
@@ -1072,7 +1198,7 @@ def createOwnerManageEmployeesToplevel():
         createButton([OwnerManageEmployee], 15, 1, 1, "Save Schedule", saveSchedule, "Calibri 18", ipadx=15)
 
         def confirmDeleteEmployee():
-            deleteEmployee(employee[0], OwnerManageEmployee)
+            deleteEmployee(employee[0], OwnerManageEmployeeToplevel)
             refresh()
 
         createButton([OwnerManageEmployee], 20, 0, 5, "Delete Employee", confirmDeleteEmployee, "Calibri 18", ipadx=15)

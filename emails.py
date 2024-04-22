@@ -1,5 +1,6 @@
 # Library Imports
 import os.path
+from dotenv import load_dotenv
 
 # Email stuff
 import ssl
@@ -8,6 +9,8 @@ from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+load_dotenv()
 
 email = os.environ['email']
 password = os.environ['password']

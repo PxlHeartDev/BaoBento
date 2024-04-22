@@ -75,7 +75,7 @@ def genBrds(columns: int, items: int):
     return borders
 
 # Generate a word document containing the receipt of an order
-def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
+def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = False):
     
     from orders import modTypes, sauceDict, picklesDict, appetisers, baos, bentos, bentoSides, classics, classicSides, sides
     from documents import modifyBorder, genBrds
@@ -235,7 +235,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
 
             items.append((
                 f'{d['count']} {bentos[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
-                f'{sauceDict[d['details'][6]].removesuffix(' [Veg]').removesuffix(' [Vgn]')}',
+                f'{sides[d['details'][6]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}',
                 sauceModFinal,
                 mods,
                 f'{bentoSides[d['details'][2]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}',
@@ -386,10 +386,12 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0):
         doc.add_paragraph(f"Note: {orderOverhead[2]}")
 
         doc.add_paragraph(f"Total price: {floatToPrice(totalPrice)}")
-
-        doc.save(f'documents/orderReceipts/{orderNum}.docx')
+        try:
+            doc.save(f'documents/orderReceipts/{orderNum}.docx')
+        except PermissionError:
+            pass
 
     finally:
-        if(order == 0):
+        if(order == 0 or openAnyway == True):
             if os.system(f'start documents/orderReceipts/"{orderNum}".docx') != 0:
                 messagebox.showerror("Error", "Cannot open receipt, file already open!", parent=parentTV)

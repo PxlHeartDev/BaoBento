@@ -80,12 +80,12 @@ class Appetiser:
         self.note = note
 
     def returnObject(self):
-        return {"count": self.count, "details": [self.appetiser, self.mod, self.sauce], "price": appetisers[self.appetiser]['price'] * self.count, "note": self.note}
+        return {"count": self.count, "details": [self.appetiser, self.mod, self.sauce], "note": self.note}
 
     def outputPretty(self):
         appetiser = appetisers[self.appetiser]
         final = {"title": "", "mod": [], "sauce": "", "price": appetiser['price'] * self.count}
-        final['title'] = f"{f'🔴 ' if self.note else ''}{f'{self.count} ' if self.count > 1 else ''}{appetiser['name']}{'' if self.sauce == appetiser['defaultSauce'] and all([(d == m) for (d, m) in zip(appetiser['mod'], self.mod)]) else ' (Mod.)'}"
+        final['title'] = f"{f'🔴 ' if self.note else ''}{f'{self.count} ' if self.count > 1 else ''}{appetiser['name']}{'' if self.sauce == appetiser['defaultSauce'] and all([(d['default'] == m) for (d, m) in zip(appetiser['mod'], self.mod)]) else ' (Mod.)'}"
         final['sauce'] = f"{f'{sauceDict[self.sauce]}' if self.sauce else 'No sauce'}"
         return final
 
@@ -122,13 +122,13 @@ class Bao:
 
 
     def returnObject(self):
-        return {"count": self.count, "details": [self.meat, self.sauce, self.sauceMod, self.pickles], "price": baos[self.meat]['price'] * self.count, "note": self.note}
+        return {"count": self.count, "details": [self.meat, self.sauce, self.sauceMod, self.pickles], "note": self.note}
 
     def outputPretty(self):
         meat = baos[self.meat]['name']
         default = list(baos[self.meat].values())[2:4]
         final = {"title": "", "sauce": "", "pickles": ["", "", "", "", ""], "price": baos[self.meat]['price'] * self.count}
-        final['title'] = f"{f'🔴 ' if self.note else ''}{f'{self.count} ' if self.count > 1 else ''}{meat} Bao {'' if self.sauce == default[0] and self.pickles == default[1] else ' (Mod.)'}"
+        final['title'] = f"{f'🔴 ' if self.note else ''}{f'{self.count} ' if self.count > 1 else ''}{meat} Bao {'' if self.sauce == default[1] and self.pickles == default[0] else ' (Mod.)'}"
         final['sauce'] = f"No sauce" if self.sauce == 0 else f"{modTypes[1][self.sauceMod]} {sauceDict[self.sauce]}"
         for p, i in zip(self.pickles, range(0, 5)):
             final['pickles'][i] = f"{modTypes[1][p]} {picklesDict[i+1]}"
@@ -138,16 +138,16 @@ class Bao:
 # This takes from sides instead of the sauces
 bentoPermittedSauces = [4, 5, 6, 7, 8, 9, 10]
 bentos = {
-    1:  {'name': 'Salted Chilli Chicken',    'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Crispy shredded chicken with sliced pepper and onion, all mixed with spicy salt and chilli flakes"},   
-    2:  {'name': 'Honey Chilli Chicken',     'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Shredded chicken with sliced pepper and onion tossed in our sweet chilli sauce"},     
-    3:  {'name': 'Peking Chicken',           'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Shredded chicken with sliced pepper and onion coated with a sweet and tangy peking sauce"},
-    4:  {'name': 'Honey Beef',               'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Triple cooked shredded beef with sliced pepper and onion tossed in our sweet chilli sauce"}, 
-    5:  {'name': 'Peking Beef',              'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Tripled cooked shredded beef with sliced pepper and onion coated with a sweet and tangy peking sauce"}, 
-    6:  {'name': 'Sriracha Noodles',         'price': 9.30, 'mod': [pepper, onion[0], pork, chicken, hot],  'sauce': -1, 'sauceMod': 1, 'side1': [5, []], 'side2': [6, [1, 1, 1, 1, 1]], 'desc': "Noodles with Chinese bbq pork and chicken tossed in a spicy Thai sriracha sauce"},
-    7:  {'name': 'Teriyaki Noodles [Veg]',   'price': 9.30, 'mod': [carrot, beanSprout, onion[0], peas[1]], 'sauce': -1, 'sauceMod': 1, 'side1': [1, []], 'side2': [6, [1, 1, 1, 1, 0]], 'desc': "Thicker noodles with carrot and beansprouts tossed in a tangy teriyaki sauce"},
-    8:  {'name': 'Katsu Chicken',            'price': 9.30, 'mod': [pickles[0]],                            'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Panko fried chicken breast on a bed of white cabbage"},
-    9:  {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                            'sauce': 10, 'sauceMod': 1, 'side1': [5, []], 'side2': [2, []], 'desc': "Spicy, crispy fried chicken strips on a bed of white cabbage"},
-    10: {'name': 'Squid',                    'price': 9.80, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'sauceMod': 1, 'side1': [1, []], 'side2': [2, []], 'desc': "Breaded shredded squid with sliced pepper and onion, all mixed with spicy salt and chilli flakes"}
+    1:  {'name': 'Salted Chilli Chicken',    'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'side1': [1, []], 'side2': [2, []], 'desc': "Crispy shredded chicken with sliced pepper and onion, all mixed with spicy salt and chilli flakes"},   
+    2:  {'name': 'Honey Chilli Chicken',     'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'side1': [1, []], 'side2': [2, []], 'desc': "Shredded chicken with sliced pepper and onion tossed in our sweet chilli sauce"},     
+    3:  {'name': 'Peking Chicken',           'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'side1': [1, []], 'side2': [2, []], 'desc': "Shredded chicken with sliced pepper and onion coated with a sweet and tangy peking sauce"},
+    4:  {'name': 'Honey Beef',               'price': 9.30, 'mod': [pepper, onion[0], hot],                 'sauce': -1, 'side1': [1, []], 'side2': [2, []], 'desc': "Triple cooked shredded beef with sliced pepper and onion tossed in our sweet chilli sauce"}, 
+    5:  {'name': 'Peking Beef',              'price': 9.30, 'mod': [pepper, onion[0]],                      'sauce': -1, 'side1': [1, []], 'side2': [2, []], 'desc': "Tripled cooked shredded beef with sliced pepper and onion coated with a sweet and tangy peking sauce"}, 
+    6:  {'name': 'Sriracha Noodles',         'price': 9.30, 'mod': [pepper, onion[0], pork, chicken, hot],  'sauce': -1, 'side1': [5, []], 'side2': [6, [1, 1, 1, 1, 1]], 'desc': "Noodles with Chinese bbq pork and chicken tossed in a spicy Thai sriracha sauce"},
+    7:  {'name': 'Teriyaki Noodles [Veg]',   'price': 9.30, 'mod': [carrot, beanSprout, onion[0], peas[1]], 'sauce': -1, 'side1': [1, []], 'side2': [6, [1, 1, 1, 1, 0]], 'desc': "Thicker noodles with carrot and beansprouts tossed in a tangy teriyaki sauce"},
+    8:  {'name': 'Katsu Chicken',            'price': 9.30, 'mod': [pickles[0]],                            'sauce': 4,  'side1': [1, []], 'side2': [2, []], 'desc': "Panko fried chicken breast on a bed of white cabbage"},
+    9:  {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                            'sauce': 10, 'side1': [5, []], 'side2': [2, []], 'desc': "Spicy, crispy fried chicken strips on a bed of white cabbage"},
+    10: {'name': 'Squid',                    'price': 9.80, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'side1': [1, []], 'side2': [2, []], 'desc': "Breaded shredded squid with sliced pepper and onion, all mixed with spicy salt and chilli flakes"}
 }
 bentoSides = {
     1: {'name': 'Spring Rolls',         'mod': []},
@@ -174,15 +174,15 @@ class Bento():
         self.note = note
 
     def returnObject(self):
-        return {"count": self.count, "details": [self.main, self.mainMod, self.side1, self.side1Mod, self.side2, self.side2Mod, self.sauce, self.sauceMod], "price": bentos[self.main]['price'] * self.count, "note": self.note}
+        return {"count": self.count, "details": [self.main, self.mainMod, self.side1, self.side1Mod, self.side2, self.side2Mod, self.sauce, self.sauceMod], "note": self.note}
 
     def outputPretty(self):
         main = bentos[self.main]['name']
         side1 = bentoSides[self.side1]['name']
         side2 = bentoSides[self.side2]['name']
         default = bentos[self.main]
-        final = {"title": "", "mainMod": [], "side1": "", "side1Mod": [], "side2": "", "side2Mod": [], "price": bentos[self.main]['price'] * self.count}
-        final['title'] = f"{f'🔴 ' if self.note else ''}{f'{self.count} ' if self.count > 1 else ''}{main}{'' if all([self.mainMod == [d['default'] for d in default['mod']], self.sauce == default['sauce'], self.sauceMod == default['sauceMod'], [self.side1, self.side1Mod] == default['side1'], [self.side2, self.side2Mod] == default['side2']]) else ' (Mod.)'}"
+        final = {"title": "", "mainMod": [], "side1": "", "side1Mod": [], "side2": "", "side2Mod": [], "sauce": "", "sauceMod": [], "price": bentos[self.main]['price'] * self.count}
+        final['title'] = f"{f'🔴 ' if self.note else ''}{f'{self.count} ' if self.count > 1 else ''}{main}{'' if all([self.mainMod == [d['default'] for d in default['mod']], self.sauce == default['sauce'], all([(d['default'] == m) for (d, m) in zip(sides[self.sauce]['mod'], self.sauceMod)]), [self.side1, self.side1Mod] == default['side1'], [self.side2, self.side2Mod] == default['side2']]) else ' (Mod.)'}"
         for i in range(0, len(bentos[self.main]['mod'])):
             final['mainMod'].append(f"{modTypes[bentos[self.main]['mod'][i]['modType']][self.mainMod[i]]} {bentos[self.main]['mod'][i]['name']}")
         
@@ -193,6 +193,11 @@ class Bento():
         final['side2'] = side2 if all([1 for m in bentoSides[self.side2]['mod']]) else f"{side2} (Mod.)"
         for i in range(0, len(self.side2Mod)):
             final['side2Mod'].append(f"{modTypes[bentoSides[self.side2]['mod'][i]['modType']][self.side2Mod[i]]} {bentoSides[self.side2]['mod'][i]['name']}")
+
+        final['sauce'] = f"{sides[self.sauce]['name']}{'' if all((d['default'] == m) for (d, m) in zip(sides[self.sauce]['mod'], self.sauceMod)) else ' (Mod.)'}"
+        for i in range(0, len(self.sauceMod)):
+            final['sauceMod'].append(f"{sides[self.sauce]['mod'][i]['name']}")
+
         return final
 
 
@@ -203,7 +208,7 @@ classics = {
     3:  {'name': 'Peking Chicken',        'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1, 'desc': "Shredded chicken with sliced pepper and onion coated with a sweet and tangy peking sauce"},
     4:  {'name': 'Honey Chilli Beef',     'price': 8.20, 'mod': [pepper, onion[0], hot],       'side': 1, 'desc': "Triple cooked shredded beef with sliced pepper and onion tossed in our sweet chilli sauce"}, 
     5:  {'name': 'Peking Beef',           'price': 8.20, 'mod': [pepper, onion[0]],            'side': 1, 'desc': "Triple cooked shredded beef with sliced pepper and onion coated with a sweet and tangy peking sauce"},
-    6:  {'name': 'Black Bean Chicken',    'price': 7.80, 'mod': [pepper, onion[0], hot],       'side': 1, 'desc': "Pieces of chicken in a rich black bean saucec with a hint of chilli"},
+    6:  {'name': 'Black Bean Chicken',    'price': 7.80, 'mod': [pepper, onion[0], hot],       'side': 1, 'desc': "Pieces of chicken in a rich black bean sauce with a hint of chilli"},
     7:  {'name': 'Chicken Fried Rice',    'price': 7.80, 'mod': [egg, peas[1]],                'side': -1, 'desc': "Wok-fried chicken atop our delicious egg-fried rice"},
     8:  {'name': 'Chicken Curry',         'price': 7.80, 'mod': [onion[0], peas[1], hot],      'side': 1, 'desc': "Pieces of chicken with onion and pepper, slathered with our signature curry"},
     9:  {'name': 'Veggie Curry [Veg]',    'price': 7.80, 'mod': [pepper, onion[0], peas[1], beanSprout, hot],  'side': 1,  'desc': "Assorted wok-fried vegetables slathered with our signature curry"},
@@ -294,6 +299,11 @@ class Order():
     def delItem(self, type: str, index: int):
         self.content[type].pop(index)
 
+    def isBlank(self):
+        if self.content == {"appetisers": [], "baos": [], "bentos": [], "classics": [], "sides": []}:
+            return True
+        return False
+
     def getOrderContent(self):
         return self.content
 
@@ -316,7 +326,7 @@ class Order():
             ({order}, {pickupTime}, '{note}')
         """)
         db.commit()
-        cursor.execute(f"SELECT orderID FROM orders")
+        cursor.execute(f"SELECT orderID FROM orders ORDER BY orderID")
         orderID = cursor.fetchall()[-1][0]
         
         if(self.customerID):

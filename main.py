@@ -1,6 +1,7 @@
 # Library Imports
 import sys
 import tkinter
+import os
 
 # mysql.connector must be imported explicitly
 import mysql.connector
@@ -89,9 +90,11 @@ if __name__ == "__main__":
         cursor.execute(f"""
             INSERT INTO customers (customerID, firstName, lastName, number, email, password, notifPref)
             VALUES
-            (1, "NULL", "CUSTOMER", "", "r", "", 0)
+            (1, "NULL", "CUSTOMER", "1", "r", "", 0)
         """)
         db.commit()
+
+    os.chdir(os.path.dirname(__file__))
 
     # Version print
     print(f"""
@@ -99,6 +102,9 @@ Version Info:
 ├ Tkinter {tkinter.TkVersion}
 ├ Python {sys.version.split(' ')[0]}
 └ MySQL Server {'.'.join([str(v) for v in db.get_server_version()])}
+
+Working dir: {os.getcwd()}
+(Should be the folder where this script is stored. If it isn't, then something went wrong and things will break!)
 """)
 # Tested fully on:
 # Tkinter 8.6
