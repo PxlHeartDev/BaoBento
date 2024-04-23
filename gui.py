@@ -47,10 +47,10 @@ def createButton(frames: list[Frame], row: int, column: int, span: int, text: st
     return button
 
 # Create and grid an entry box in one or more frames
-def createEntryBox(frames: list[Frame], row: int, column: int, span: int, textVar: any, font="Calibri 22", justify = 'center', width = 18, ipadx=0, ipady=2, password=False, rowspan=1):
+def createEntryBox(frames: list[Frame], row: int, column: int, span: int, textVar: any, font="Calibri 22", justify = 'center', width = 18, ipadx=0, ipady=2, password=False, rowspan=1, sticky=''):
     for f in frames:
         entryBox = Entry(f, textvariable=textVar, justify=justify, font=font, width=width)
-        entryBox.grid(row=row, column=column, columnspan=span, rowspan=rowspan, ipadx=ipadx, ipady=ipady)
+        entryBox.grid(row=row, column=column, columnspan=span, rowspan=rowspan, ipadx=ipadx, ipady=ipady, sticky=sticky)
         if(password):
             entryBox.config(show='*')
 

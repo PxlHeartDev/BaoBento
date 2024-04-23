@@ -1512,15 +1512,16 @@ def createOwnerPromotionToplevel():
     OwnerPromotionToplevel, OwnerPromotion = createToplevel('500x500')
     OwnerPromotionToplevel.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerPromotionToplevel))
     createText([OwnerPromotion], 1, 0, 4, "Promotion", "Calibri 35 bold")
-    createText([OwnerPromotion], 2, 0, 2, "Title:", "Calibri 15")
+    createText([OwnerPromotion], 2, 1, 2, "Title:", "Calibri 15", sticky='news')
     title = StringVar()
-    createEntryBox([OwnerPromotion], 3, 0, 2, title, "Calibri 20")
+    createEntryBox([OwnerPromotion], 3, 1, 2, title, "Calibri 20", sticky='news')
 
-    createText([OwnerPromotion], 4, 0, 2, "Message:", "Calibri 15")
+    createText([OwnerPromotion], 4, 1, 2, "Message:", "Calibri 15")
 
     bodyEntry = scrolledtext.ScrolledText(OwnerPromotion, wrap=WORD, width=40, height=8, font="Calibri 15") 
     bodyEntry.grid(column=0, row=5, columnspan=4, pady=10, padx=10)
 
+    UIButton = []
 
     def sendEmails():
         body = bodyEntry.get("0.0", END)[0:-1]
@@ -1528,22 +1529,24 @@ def createOwnerPromotionToplevel():
             messagebox.showerror("Error", "Title or message body cannot be blank!", parent=OwnerPromotion)
             return
         
-        msg = Toplevel(OwnerPromotionToplevel, bg='#000000')
-        msg.geometry("500x100")
-        msgFrame = Frame(msg, bg='#000000')
-        createText([msgFrame], 0, 0, 1, "Sending emails. This may take a minute...")
-        time.sleep(1)
+        # msg, msgFrame = createToplevel('700x100')
+        # createText([msgFrame], 0, 0, 1, "Sending emails. This may take a minute...")
+        
+        # msg.grid_rowconfigure(0, weight=1)
+        # msg.grid_columnconfigure(0, weight=1)
 
-        # cursor.execute("SELECT email FROM customers WHERE notifPref = 1 OR notifPref = 3 AND email = \"rianyoungni@outlook.com\"")
-        # data = cursor.fetchall()
-        # for d in data:
-        #     sendEmail(d[0], title.get(), bodyEntry.get("0.0", END)[0:-1])
-        # if(msg): msg.destroy()
-        # OwnerPromotionToplevel.destroy()
+        UIButton[0].destroy()
+        UIButton.clear()
+        createText([OwnerPromotion], 6, 0, 4, "   Sending emails.\nThis may take a minute...", "Calibri 18", sticky='news', padx=30)
 
-        messagebox.showinfo("Success", "Emails sent")
+        cursor.execute("SELECT email FROM customers WHERE notifPref = 1 OR notifPref = 3")
+        data = cursor.fetchall()
 
-    createButton([OwnerPromotion], 6, 0, 2, "Send Emails", lambda:sendEmails(), "Calibri 20", width=30)
+        root.after(50, lambda:[sendEmail(d[0], title.get(), bodyEntry.get("0.0", END)[0:-1]) for d in data])
+        root.after(100, lambda:messagebox.showinfo("Success", "Emails sent"))
+        root.after(150, lambda:OwnerPromotionToplevel.destroy())
+
+    UIButton.append(createButton([OwnerPromotion], 6, 1, 2, "Send Emails", lambda:sendEmails(), "Calibri 20", width=30))
 
 #############################################################################################################################
 #############################################################################################################################
