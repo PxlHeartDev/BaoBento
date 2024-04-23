@@ -7,6 +7,7 @@ import math
 # Explicit imports
 from tkinter import messagebox, ttk
 from tkinter.simpledialog import askinteger, askstring
+from tkinter import scrolledtext
 from time import strftime
 
 # Me imports
@@ -1504,6 +1505,45 @@ def createOwnerReportsToplevel():
     # createButton([OwnerReports], 4, 0, 2, "Sold Food Items - Quantities", lambda:generateSoldFoodItemsReport(), "Calibri 20", width=30)
     createButton([OwnerReports], 5, 0, 2, "Sold Food Items", lambda:generateSoldFoodItemsGraph(), "Calibri 20", width=30)
     createButton([OwnerReports], 6, 0, 2, "Item Trends", lambda:generateItemTrendGraph(), "Calibri 20", width=30)
+
+def createOwnerPromotionToplevel():
+    from emails import sendEmail
+    # Create toplevel
+    OwnerPromotionToplevel, OwnerPromotion = createToplevel('500x500')
+    OwnerPromotionToplevel.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerPromotionToplevel))
+    createText([OwnerPromotion], 1, 0, 4, "Promotion", "Calibri 35 bold")
+    createText([OwnerPromotion], 2, 0, 2, "Title:", "Calibri 15")
+    title = StringVar()
+    createEntryBox([OwnerPromotion], 3, 0, 2, title, "Calibri 20")
+
+    createText([OwnerPromotion], 4, 0, 2, "Message:", "Calibri 15")
+
+    bodyEntry = scrolledtext.ScrolledText(OwnerPromotion, wrap=WORD, width=40, height=8, font="Calibri 15") 
+    bodyEntry.grid(column=0, row=5, columnspan=4, pady=10, padx=10)
+
+
+    def sendEmails():
+        body = bodyEntry.get("0.0", END)[0:-1]
+        if(body in ["", "\n", "\n\n", "\n\n\n"] or title.get() == ""):
+            messagebox.showerror("Error", "Title or message body cannot be blank!", parent=OwnerPromotion)
+            return
+        
+        msg = Toplevel(OwnerPromotionToplevel, bg='#000000')
+        msg.geometry("500x100")
+        msgFrame = Frame(msg, bg='#000000')
+        createText([msgFrame], 0, 0, 1, "Sending emails. This may take a minute...")
+        time.sleep(1)
+
+        # cursor.execute("SELECT email FROM customers WHERE notifPref = 1 OR notifPref = 3 AND email = \"rianyoungni@outlook.com\"")
+        # data = cursor.fetchall()
+        # for d in data:
+        #     sendEmail(d[0], title.get(), bodyEntry.get("0.0", END)[0:-1])
+        # if(msg): msg.destroy()
+        # OwnerPromotionToplevel.destroy()
+
+        messagebox.showinfo("Success", "Emails sent")
+
+    createButton([OwnerPromotion], 6, 0, 2, "Send Emails", lambda:sendEmails(), "Calibri 20", width=30)
 
 #############################################################################################################################
 #############################################################################################################################
