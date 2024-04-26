@@ -10,11 +10,14 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+# Allows the environment variables to be loaded correctly outside of VSCode debug mode
 load_dotenv()
 
+# Get the environment variables
 email = os.environ['email']
 password = os.environ['password']
 
+# Send an email to a recipient with a subject heading, message body, and optionally an attachment
 def sendEmail(recipient: str, subject: str, body = "", attachment = None):
     if(recipient == "r"): return
     # Set up the email
@@ -43,5 +46,6 @@ def sendEmail(recipient: str, subject: str, body = "", attachment = None):
     
     # Connect to Gmail's public SMTP server
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as server:
+        # Login and send
         server.login(email, password)
         server.sendmail(email, recipient, msg.as_string())

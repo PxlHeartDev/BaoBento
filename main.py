@@ -3,30 +3,38 @@ import sys
 import tkinter
 import os
 
-# mysql.connector must be imported explicitly
+# Explicit imports
 import mysql.connector
+from mysql.connector import InterfaceError
 
 # Connect to the MySQL database
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    passwd="password123",
-    auth_plugin="mysql_native_password"
-)
+try:
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        passwd="password123",
+        auth_plugin="mysql_native_password"
+    )
+except InterfaceError:
+    print("\nERROR:\nMySQL service is not running\nPlease ensure it is running before starting the program again\n")
+    quit()
 
 # Store the data of the currently logged in customer/employee
 global userData
 
+# Set the data of the global variable
 def setUserData(data = []):
     global userData
     userData = data
 
+# Refresh the data using the current user's ID
 def refreshUserData(type: str):
     if(not(type in ['customer', 'employee'])):
         raise ValueError("Invalid argument for `type` in function `refreshUserData()`\nProgrammer error")
     cursor.execute(f"SELECT * FROM {type}s WHERE {type}ID = {userData[0]}")
     setUserData(cursor.fetchone())
 
+# Get the data of the global variable
 def getUserData():
     global userData
     return userData
@@ -75,6 +83,7 @@ if __name__ == "__main__":
         )""")
     print("Database successfully created or already exists")
 
+    # Add the owner login
     cursor.execute("SELECT * FROM employees WHERE employeeID = 1")
     if(not(cursor.fetchone())):
         print("\nOwner login not found, creating a default login")
@@ -84,6 +93,8 @@ if __name__ == "__main__":
             (1, "Peter", "Cheung", "MrBao123")
         """)
         db.commit()
+    
+    # Add the NULL customer (for assigning orders with no real customer)
     cursor.execute("SELECT * FROM customers WHERE customerID = 1")
     if(not(cursor.fetchone())):
         print("\nNo NULL customer found, creating one")
@@ -94,6 +105,8 @@ if __name__ == "__main__":
         """)
         db.commit()
 
+    # Change the directly of the python command terminal
+    # Allows the program to run properly outside of VSCode debug
     os.chdir(os.path.dirname(__file__))
 
     # Version print

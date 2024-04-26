@@ -20,10 +20,12 @@ def addCustomer(firstName: str, lastName: str, number: str, email: str, password
             return False
 
     # Simple email regex check
+    # From https://emailregex.com/
     if(not(re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email))):
         messagebox.showerror("Error", "Email must contain a valid domain")
         return False
     # Simple phone number regex check
+    # From https://stackoverflow.com/a/29767609
     if(not(re.match(r"^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$", number))):
         messagebox.showerror("Error", "Invalid phone number")
         return False
@@ -62,12 +64,7 @@ Email: {email}\n\
 Password: ***\n")
     return True
 
-def retrieveCustomerOrders(customerID):
-    cursor.execute(f"""
-        SELECT *  FROM orders WHERE customerID_FK = {customerID}
-    """)
-    return cursor.fetchall()
-
+# Remove the customer from the system by blanking the details
 def deleteCustomer(customerID, tl):
     if(messagebox.askyesno("Delete Account", "Are you sure you wish to delete your account?", parent=tl)):
         from gui import setFrame, MainMenu, clearBoxes, destroyToplevels
@@ -77,7 +74,7 @@ def deleteCustomer(customerID, tl):
         db.commit()
         setFrame(MainMenu, "Successfully deleted account\nSorry to see you go", "Success")
 
-# Create a customer accountR
+# Create a customer account
 def createAccount():
     from gui import getEntryData, customerLogin
     entryData = getEntryData()
@@ -87,7 +84,7 @@ def createAccount():
         db.commit()
 
 
-
+# Update customer notification preferences
 def updateNotif(customerID, sms, email, tl):
     # Update
     cursor.execute(f"UPDATE customers SET notifPref = {int(f'0b{sms}{email}', 0)} WHERE customerID = {customerID};")
@@ -95,6 +92,7 @@ def updateNotif(customerID, sms, email, tl):
     refreshUserData('customer')
     messagebox.showinfo("Success", "Successfully updated notification preferences", parent=tl)
 
+# Update customer general details
 def updateDetails(customerID, firstName, lastName, number, tl):
     # Length and presence checks
     values = [[firstName, "First Name", 24], [lastName, "Last Name", 24], [number, "Number", 14]]
@@ -117,6 +115,7 @@ def updateDetails(customerID, firstName, lastName, number, tl):
     refreshUserData('customer')
     messagebox.showinfo("Success", "Successfully updated personal details", parent=tl)
 
+# Update customer email
 def updateEmail(customerID, email, tl):
     # Presence check
     if(not(email)):
@@ -136,7 +135,8 @@ def updateEmail(customerID, email, tl):
     db.commit()
     refreshUserData('customer')
     messagebox.showinfo("Success", "Successfully updated email", parent=tl)
-    
+
+# Update customer password
 def updatePassword(customerID, newPass, oldPass, tl):
     # Presence check
     if(not(newPass)):
@@ -164,6 +164,7 @@ def updatePassword(customerID, newPass, oldPass, tl):
     refreshUserData('customer')
     messagebox.showinfo("Success", "Successfully updated password", parent=tl)
 
+# Add an employee to the system
 def addEmployee(firstName, lastName, accessKey, conAccessKey, tl):
     values = [[firstName, "First Name", 24], [lastName, "Last Name", 24], [accessKey, "Access Key", 32]]
     for v in values:
@@ -193,6 +194,7 @@ def addEmployee(firstName, lastName, accessKey, conAccessKey, tl):
     messagebox.showinfo("Success", f"Successfully added employee {firstName} {lastName}", parent=tl)
     tl.destroy()
 
+# Remove an employee from the system
 def deleteEmployee(employeeID, tl):
     if(messagebox.askyesno("Delete Account", "Are you sure you wish to delete this employee?", parent=tl)):
         cursor.execute(f"DELETE FROM employees WHERE employeeID = {employeeID}")

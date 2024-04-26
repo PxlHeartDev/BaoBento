@@ -62,9 +62,9 @@ def genBrds(columns: int, items: int):
     borders[3].extend(genBrdArr(False, columns))
 
     for i in range(0, items):
-        borders[0].extend(genBrdArr(True, columns))
+        borders[0].extend(genBrdArr(False, columns))
         borders[1].extend(genBrdArr(False, columns))
-        borders[2].extend(genBrdArr(False, columns))
+        borders[2].extend(genBrdArr(True, columns))
         borders[3].extend(genBrdArr(False, columns))
 
         # This whole section is a mess. Making it so that the column value isn't reduced by 1 when there's only 2 columns works. Don't ask me how.
@@ -75,10 +75,10 @@ def genBrds(columns: int, items: int):
     return borders
 
 # Generate a word document containing the receipt of an order
+# This function is a patch job of random fixes. It has like four unique calls
 def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = False):
-    
+    # Import needed stuff
     from orders import modTypes, sauceDict, picklesDict, appetisers, baos, bentos, bentoSides, classics, classicSides, sides
-    from documents import modifyBorder, genBrds
     
     try:   
         # When data is provided that means the receipt is being generated from an order that is currently being placed
@@ -123,19 +123,21 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
 
         totalPrice = 0.00
 
+        # Appetisers section
         for d in orderData['appetisers']:
             mods = []
 
+            # Generate the table contents and store each in the list
             for i in range(0, len(d['details'][1])):
                 modMod = modTypes[appetisers[d['details'][0]]['mod'][i]['modType']][d['details'][1][i]]
                 modName = appetisers[d['details'][0]]['mod'][i]['name']
                 modFull = f'{modMod} {modName}'
                 if(modFull == "Not Well done"): continue
-                if(modFull == "Normal Hot"): continue
-                if(modName == "Well done"): mods.append(f'{modName}'); continue
-                if(modName == "Hot"): mods.append(f'{modMod}'); continue
-                if(modFull == "Yes Lemon"): continue
-                mods.append(modFull)
+                elif(modFull == "Normal Hot"): continue
+                elif(modName == "Well done"): mods.append(f'{modName}'); continue
+                elif(modName == "Hot"): mods.append(f'{modMod}'); continue
+                elif(modFull == "Yes Lemon"): continue
+                else: mods.append(modFull)
             items.append((
                 f'{d['count']} {appetisers[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
                 f'{sauceDict[d['details'][2]].removesuffix(' [Veg]').removesuffix(' [Vgn]')}',
@@ -144,6 +146,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
                 d['note']
             ))
 
+        # Make the table
         table = doc.add_table(rows=1, cols=3)
         header = table.rows[0].cells
         header[0].text = 'Qty&Name'
@@ -163,10 +166,11 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
             noteRow[2].text = floatToPrice(price)
         modifyBorder(table, *genBrds(3, len(items)))
 
-
+        #  Baos section
         doc.add_heading('Baos', level=1)
         
         items = []
+        # Generate the table contents and store each in the list
         for d in orderData['baos']:
             items.append((
                 f'{d['count']} {baos[d['details'][0]]['name'].removesuffix(' [Veg]').removesuffix(' [Vgn]')}', 
@@ -176,6 +180,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
                 d['note']
             ))
 
+        # Make the table
         table = doc.add_table(rows=1, cols=3)
         header = table.rows[0].cells
         header[0].text = 'Qty&Name'
@@ -195,10 +200,11 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
             noteRow[2].text = floatToPrice(price)
         modifyBorder(table, *genBrds(3, len(items)))
         
-        
+        # Bentos section
         doc.add_heading('Bentos', level=1)
 
         items = []
+        # Generate the table contents and store each in the list
         for d in orderData['bentos']:
             mods = []
             s1mods = []
@@ -246,6 +252,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
                 d['note']
             ))
 
+        # Make the table
         table = doc.add_table(rows=1, cols=7)
         header = table.rows[0].cells
         header[0].text = 'Qty&Name'
@@ -277,10 +284,11 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
             noteRow[6].text = floatToPrice(price)
         modifyBorder(table, *genBrds(7, len(items)))
 
-        
+        # Classics section
         doc.add_heading('Classics', level=1)
         
         items = []
+        # Generate the table contents and store each in the list
         for d in orderData['classics']:
             mods = []
             sMods = []
@@ -307,6 +315,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
                 d['note']
             ))
 
+        # Make the table
         table = doc.add_table(rows=1, cols=4)
         header = table.rows[0].cells
         header[0].text = 'Qty&Name'
@@ -331,10 +340,11 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
         modifyBorder(table, *genBrds(4, len(items)))
         
         
-
+        # Sides section
         doc.add_heading('Sides', level=1)
 
         items = []
+        # Generate the table contents and store each in the list
         for d in orderData['sides']:
             mods = []
             sMods = []
@@ -355,6 +365,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
                 d['note']
             ))
 
+        # Make the table
         table = doc.add_table(rows=1, cols=2)
         header = table.rows[0].cells
         header[0].text = 'Qty&Name'
@@ -373,6 +384,7 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
 
         doc.add_paragraph("---\n")
 
+        # Overhead stuff
         placementTime = time.localtime(orderOverhead[0] + 1704067200)
         pickupTime = orderOverhead[1]
         doc.add_paragraph(f"Placed: {strftime("%A", placementTime)} {ordinal(int(strftime("%d", placementTime)))} {strftime("%B, %Y at %H:%M", placementTime)}")
@@ -390,8 +402,8 @@ def createOrderReceipt(parentTV = None, orderData = {}, order = 0, openAnyway = 
             doc.save(f'documents/orderReceipts/{orderNum}.docx')
         except PermissionError:
             pass
-
-    finally:
-        if(order == 0 or openAnyway == True):
-            if os.system(f'start documents/orderReceipts/"{orderNum}".docx') != 0:
-                messagebox.showerror("Error", "Cannot open receipt, file already open!", parent=parentTV)
+    
+    # Open the document automatically
+    if(order == 0 or openAnyway == True):
+        if os.system(f'start documents/orderReceipts/"{orderNum}".docx') != 0:
+            messagebox.showerror("Error", "Cannot open receipt, file already open!", parent=parentTV)

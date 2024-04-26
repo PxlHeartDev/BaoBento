@@ -11,7 +11,8 @@ from functions import genExceptions
 
 # Functions
 
-# Changes the current frame, displaying a messagebox if requested
+# Changes the current frame
+# As need can display a message box, clear the entry boxes, execute a function, or resize the root
 def setFrame(frame: Frame, message = '', messageTitle = '', clear = False, function = None, geometry = ''):
     BlankFrame.tkraise()
     frame.tkraise()
@@ -68,7 +69,7 @@ def createCheckbox(frames: list[Frame], row: int, column: int, span: int, text: 
     for f in frames:
         checkbox = Checkbutton(f, text=text, fg='#ffed00', bg='#000000', selectcolor='#000000', activebackground='#000000', variable=variable, onvalue=True, offvalue=False, font=font, justify=justify, command=lambda:variable.get())
         checkbox.grid(row=row, column=column, columnspan=span, padx=padx, pady=pady, sticky=sticky)                                                                                     # Don't ask, for some reason beyond my feeble comprehension the state of the checkbox can only
-#                                                                                                                                                                                         take a non-falsy initial state when its variable is '.get()'d within the command of the box...
+#  Rant over there -->                                                                                                                                                                    take a non-falsy initial state when its variable is '.get()'d within the command of the box...
 #                                                                                                                                                                                         Like, explicitly that. Retrieved within the command. Even if it's not used. It's like TF2 coconut.
         variable.set(initVal)
         return checkbox
@@ -80,6 +81,7 @@ def customerLogin():
         messagebox.showerror("Error", "Field(s) cannot be blank")
         return
     
+    # Find out if it's a valid login
     cursor.execute(f"SELECT * FROM customers WHERE email = '{email.get()}'")
     data = cursor.fetchone()
     if(not(data) or data[5] != password.get() or data == "r"):
@@ -93,6 +95,7 @@ def customerLogin():
 
 # Log into an employee account
 def employeeLogin():
+    # Find out if it's a valid login
     cursor.execute(f"SELECT * FROM employees WHERE accessKey = '{accessKey.get()}'")
     data = cursor.fetchone()
     if(not(data) or username.get() != f"{data[1][0].lower()}{data[2].lower()}"):
@@ -114,6 +117,7 @@ def logout():
         clearBoxes()
         setFrame(MainMenu, "Successfully logged out", "Success", geometry='400x400')
 
+# Destroy all the existing toplevels
 def destroyToplevels():
     for widget in root.winfo_children():
         if isinstance(widget, Toplevel):
@@ -143,11 +147,6 @@ accessKey = StringVar()
 
 
 
-#####
-##### Redo the 'No account yet?' and 'Got an account already?' thingies. They look weird.
-#####
-
-
 # Create frames
 MainMenu = Frame(root, bg='#000000')
 
@@ -172,7 +171,6 @@ OwnerManageCustomers = Frame(root, bg='#000000')
 OwnerManageEmployees = Frame(root, bg='#000000')
 OwnerEditMenu = Frame(root, bg='#000000')
 
-
 # Grid the frames
 for i in (MainMenu,
 CustomerCreate, CustomerLogin, CustomerHome,
@@ -180,11 +178,11 @@ EmployeeMenu, EmployeeLogin, EmployeeSchedule,
 OwnerMenu,
 ):
     i.grid(row=0, column=0, sticky='')
-#     i.grid_rowconfigure(0, weight=1)
-#     i.grid_columnconfigure(0, weight=1)
 root.grid_rowconfigure(0, weight=1)
 root.grid_columnconfigure(0, weight=1)
 
+# When frames changed they would initially display over each other
+# This blank frame covers the whole screen underneath the topmost screen so this doesn't happen
 BlankFrame.grid(row=0, column=0, sticky='', ipadx=3000,ipady=3000)
 
 #### Main menu frame #####
@@ -233,7 +231,6 @@ createButton([CustomerLogin], 9, 1, 1, "Create Account", lambda:setFrame(Custome
 ### Customer Home ###
 createText([CustomerHome], 1, 0, 4, "Home", "Calibri 35 bold")
 createButton([CustomerHome], 2, 0, 1, "Menu/Create an Order", lambda:createOwnerCreateOrderTopLevel(getUserData()[0]), "Calibri 18", ipadx=38)
-# createButton([CustomerHome], 3, 0, 1, "Rewards", lambda:setFrame(CustomerRewards), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 4, 0, 1, "View Orders", lambda:createCustomerViewOrdersToplevel(), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 5, 0, 1, "Settings", lambda:createCustomerSettingsToplevel(), "Calibri 18", ipadx=38)
 createButton([CustomerHome], 6, 0, 1, "Logout", lambda:logout(), "Calibri 18", ipadx=38)
@@ -249,7 +246,6 @@ createEntryBox([EmployeeLogin], 2, 1, 1, accessKey, width=21, password=True)
 createButton([EmployeeLogin], 1, 3, 1, "Login", employeeLogin, "Calibri 18", padx=5)
 
 ### Schedule ###
-
 def genSchedule():
     createText([EmployeeSchedule], 1, 1, 4, f"Schedule for {getUserData()[1]} {getUserData()[2]}", "Calibri 35 bold")
     createButton([EmployeeSchedule], 6, 1, 4, "Back", lambda:setFrame(EmployeeMenu, geometry='400x400'), "Calibri 25 bold")
@@ -263,6 +259,7 @@ def genSchedule():
     createText([EmployeeSchedule], 2, 1, 4, "You work")
     createText([EmployeeSchedule], 3, 0, 6, str(schedText).removeprefix('[').removesuffix(']').replace("'", ""), "Calibri 15")
     
+    # Get the exceptions and create the text
     exceptions = getUserData()[5]
     exceptText = []
     if(not(exceptions)): return
@@ -300,5 +297,4 @@ from toplevels import *
 
 # Initialize the GUI!
 setFrame(MainMenu, geometry='400x400')
-
 root.mainloop()

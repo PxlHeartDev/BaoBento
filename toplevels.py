@@ -13,29 +13,33 @@ from time import strftime
 # Me imports
 from main import db, cursor, getUserData
 from gui import root, createText, createButton, createEntryBox, createDropdown, createCheckbox
-from sql import retrieveCustomerOrders, deleteCustomer, updateDetails, updateEmail, updateNotif, updatePassword, addEmployee, deleteEmployee
+from sql import deleteCustomer, updateDetails, updateEmail, updateNotif, updatePassword, addEmployee, deleteEmployee
 from orders import Appetiser, Bao, Bento, Classic, Side
 from documents import createOrderReceipt
-from functions import floatToPrice, ordinal, monthToTime, months, truncateText, closedWindow, keyFromVal, keyFromValPrecise, indexFromVal, genExceptions, monthToInt, isLeapYear
+from functions import floatToPrice, ordinal, monthToTime, months, truncateText, closedWindow, keyFromVal, indexFromVal, genExceptions, monthToInt, isLeapYear
 
 # Global, for use with marking orders
 global selectedOrder
 selectedOrder = []
 
+# Get the currently seleced order
 def getSelectedOrder():
     return selectedOrder
 
+# Create a toplevel
+# Set geometry as needed
 def createToplevel(geometry = ''):
     tl = Toplevel(root, bg='#000000')
     if(geometry):
         tl.geometry(geometry)
     frame = Frame(tl, bg='#000000')
     frame.grid(row=0, column=0, sticky='')
+
+    # Centre elements to the window
     tl.grid_rowconfigure(0, weight=1)
     tl.grid_columnconfigure(0, weight=1)
 
     return tl, frame
-
 
 # Customer view orders menu
 def createCustomerViewOrdersToplevel():
@@ -63,10 +67,12 @@ def createCustomerViewOrdersToplevel():
         for d in data:
             # Item count solving
             itemCount = sum([sum([i['count'] for i in v]) for v in json.loads(d[2]).values()])
+            # Place record into the treeview
             treeview.insert("", END, values=[
                 d[0],
                 f"{itemCount} item{'s' if itemCount > 1 else ''}", 
                 "Yes" if d[3] else "No", "Yes" if d[4] else "No", 
+                # Format times
                 strftime("%a, %d %b %Y %H:%M", time.localtime(d[5] + 1704067200)), 
                 strftime("%a, %d %b %Y %H:%M", time.localtime(d[6] + 1704067200))
             ])
@@ -75,14 +81,17 @@ def createCustomerViewOrdersToplevel():
         for c, h, w in zip(columns, headings, widths):
             treeview.column(c, anchor='center', width=w)
             treeview.heading(c, text=h, anchor='center')
-
+    
+    # Action buttons
     createButton([CustomerViewOrders], 3, 1, 1, "Active", lambda:populate("AND complete = 0"))
     createButton([CustomerViewOrders], 3, 2, 1, "Complete", lambda:populate("AND complete = 1"))
 
+    # Initial population
     populate("AND complete = 0")
 
     UIElements = []
 
+    # Runs when the customer clicks on an order
     def customerOrderSelected(event):
         for e in UIElements:
             e.destroy()
@@ -91,6 +100,7 @@ def createCustomerViewOrdersToplevel():
         if selectedItems:
             item = selectedItems[0]
             order = event.widget.item(item)['values'][0]
+            # Generate the button
             UIElements.append(createButton([CustomerViewOrders], 4, 1, 2, "View Receipt", lambda:createOrderReceipt(order = order, openAnyway = True)))
 
 
@@ -158,11 +168,14 @@ def createCustomerSettingsToplevel():
     # Back
     createButton([CustomerSettings], 11, 0, 4, "Back", lambda:CustomerSettingsToplevel.destroy(), "Calibri 18", pady=5, width=20)
 
+
+
 #############################################################################################################################
 #############################################################################################################################
 #############################################################################################################################
 
 # Owner menu for creating a new order
+# Also used by customers
 def createOwnerCreateOrderTopLevel(customerID = 0):
     # Create top level
     OwnerCreateOrderTopLevel, OwnerCreateOrder = createToplevel('960x690')
@@ -187,12 +200,15 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
             if(id == None): return
             o.assignCustomer(id)
 
+        # Pickup time
         pickupTime = askinteger("Pickup time", "Please enter a pickup time in seconds since Jan 1 2024, 00:00 UTC+0", parent=OwnerCreateOrder)
         if(pickupTime == None): return
 
+        # Order notes (separate from individual notes on items)
         note = askstring("Notes", "Please enter any notes about the order, such as allergens or specific requests", parent=OwnerCreateOrder)
         if(note == None): return
 
+        # Complete the order, tell the user, and destroy the menu
         o.completeOrder(pickupTime, note)
         messagebox.showinfo("Success", "Successfully placed order", parent=OwnerCreateOrder)
         OwnerCreateOrderTopLevel.destroy()
@@ -399,13 +415,16 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 note = StringVar()
                 createText([OwnerAddItem], 11, 0, 1, "Notes: ", "Calibri 20", pady=10)
                 createEntryBox([OwnerAddItem], 11, 1, 2, note, "Calibri 20", width=30, ipadx=30)
-
-            # The rest of these won't be commented out fully. They're mostly the same with bits changed around
+            
+            #####
+            ##### The rest of these won't be commented out fully
+            ##### They're mostly the same as the previous sections with bits changed around
+            #####
             case("bentos"):
 
                 OwnerAddItemToplevel.geometry('1000x920')
 
-                # Import here because idk honestly man I'm tired, probably circular import circumvention or something
+                # Import
                 from orders import bentos, bentoSides, bentoPermittedSauces, sides
 
                 # Store the auto-generated UI elements and variables in a list so they can be easily accessed and cleared out
@@ -557,7 +576,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
 
                 OwnerAddItemToplevel.geometry('1000x600')
                 
-                # Import here because idk honestly man I'm tired, probably circular import circumvention or something
+                # Import
                 from orders import classics, classicSides
 
                 # Store the auto-generated UI elements and variables in a list so they can be easily accessed
@@ -661,7 +680,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 
             case("sides"):
 
-                # Import here because idk honestly man I'm tired, probably circular import circumvention or something
+                # Import
                 from orders import sides
 
                 # Store the auto-generated UI elements and variables in a list so they can be easily accessed
@@ -729,13 +748,6 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
 #############################################################################################################################
 #############################################################################################################################
 
-
-#
-
-
-#############################################################################################################################
-#############################################################################################################################
-#############################################################################################################################
 
 # Top level that lets the owner view all orders in the system
 def createOwnerViewOrdersToplevel():
@@ -824,10 +836,10 @@ def createOwnerViewOrdersToplevel():
 
 
 
+#############################################################################################################################
+#############################################################################################################################
+#############################################################################################################################
 
-#############################################################################################################################
-#############################################################################################################################
-#############################################################################################################################
 
 # Owner customer management
 def createOwnerManageCustomersToplevel():
@@ -896,7 +908,7 @@ def createOwnerViewCustomerOrdersToplevel(customer):
     orderTreeview.column("price", anchor='w', width=100)
     orderTreeview.heading("title", text='No order selected', anchor='center')
 
-
+    # Fill the treeview with data
     def populate(filter = ""):
         # Delete all existing rows
         treeview.delete(*treeview.get_children())
@@ -925,7 +937,7 @@ def createOwnerViewCustomerOrdersToplevel(customer):
             treeview.heading(c, text=h, anchor='center')
 
 
-        # Mark or unmark an order as complete in the system
+    # Mark or unmark an order as complete in the system
     def markComplete():
         global selectedOrder
         if(not(selectedOrder)):
@@ -945,6 +957,7 @@ def createOwnerViewCustomerOrdersToplevel(customer):
 
     buttonFont = 'Calibri 18'
     
+    # Action buttons
     createText([OwnerViewCustomerOrders], 4, 0, 1, "Filter:", pady=8)
     createButton([OwnerViewCustomerOrders], 4, 1, 1, "All", command=lambda: populate(""), font=buttonFont)
     createButton([OwnerViewCustomerOrders], 4, 2, 1, "Active", command=lambda: populate("AND complete = 0"), font=buttonFont)
@@ -957,6 +970,7 @@ def createOwnerViewCustomerOrdersToplevel(customer):
 
     createButton([OwnerViewCustomerOrders], 5, 2, 2, "View Order Receipt", command=lambda:createOrderReceipt(OwnerViewCustomerOrders), font=buttonFont, width=20)
 
+    # Initial population
     populate()
 
 #############################################################################################################################
@@ -1061,11 +1075,13 @@ def orderSelected(event, tree):
 def createOwnerManageEmployeesToplevel():
     OwnerManageEmployeesToplevel, OwnerManageEmployees = createToplevel()
     createText([OwnerManageEmployees], 1, 0, 4, "Manage Employees", "Calibri 35 bold")
-
+    
+    # Refresh the employee list
     def refresh():
         columns = ("cid", "fn", "ln", "ak")
         headings = ("Employee ID", "First Name", "Last Name", "Access Key")
 
+        # Create the treeview
         treeview = ttk.Treeview(OwnerManageEmployees, columns=columns, show='headings', padding=1, selectmode='browse')
         cursor.execute(f"SELECT * FROM employees")
         data = cursor.fetchall()
@@ -1076,17 +1092,18 @@ def createOwnerManageEmployeesToplevel():
         treeview.grid(row = 3, column = 0, padx=10)
         treeview.bind('<<TreeviewSelect>>', lambda event: employeeSelected(event, treeview))
 
-
-
+    # Add an employee to the system
     def createOwnerCreateEmployeeToplevel():
         OwnerCreateEmployeeToplevel, OwnerCreateEmployee = createToplevel('700x500')
         createText([OwnerCreateEmployee], 1, 0, 4, "Add Employee", "Calibri 35 bold")
 
+        # Entry box vars
         firstName = StringVar()
         lastName = StringVar()
         accessKey = StringVar()
         conAccessKey = StringVar()
 
+        # Entry boxes and labels
         createText([OwnerCreateEmployee], 2, 0, 1, "First Name: ", pady=5, padx=38)
         createEntryBox([OwnerCreateEmployee], 2, 1, 1, firstName, width=21)
         createText([OwnerCreateEmployee], 3, 0, 1, "Last Name: ", pady=5, padx=38)
@@ -1096,14 +1113,18 @@ def createOwnerManageEmployeesToplevel():
         createText([OwnerCreateEmployee], 5, 0, 1, "Confirm Key:", pady=5, padx=38)
         createEntryBox([OwnerCreateEmployee], 5, 1, 1, conAccessKey, width=21)
 
+        # Add to the system and refresh the treeview
         def confirmAddEmployee():
             addEmployee(firstName.get(), lastName.get(), accessKey.get(), conAccessKey.get(), OwnerCreateEmployeeToplevel)
             refresh()
         
+        # Confirm button
         createButton([OwnerCreateEmployee], 6, 0, 2, "Create Profile", confirmAddEmployee)
     
+    # Initial population
     refresh()
 
+    # Opens the add employee menu
     createButton([OwnerManageEmployees], 4, 0, 1, "Add Employee", createOwnerCreateEmployeeToplevel, pady=1)
 
     # Runs when an employee is selected in the treeview
@@ -1117,17 +1138,22 @@ def createOwnerManageEmployeesToplevel():
             else:
                 messagebox.showerror("Error", "Can't manage owner account", parent=OwnerManageEmployees)
 
+    # Employee management
     def createOwnerManageEmployeeToplevel(employee: list):
+        # Create the toplevel and add title and subtitle
         OwnerManageEmployeeToplevel, OwnerManageEmployee = createToplevel()
         createText([OwnerManageEmployee], 1, 0, 5, "Manage Employee", "Calibri 35 bold")
         createText([OwnerManageEmployee], 2, 0, 5, f"{employee[0]}, {employee[1]} {employee[2]}", "Calibri 20 bold")
 
+        # Checkbox vars
         schedVars = [BooleanVar(), BooleanVar(), BooleanVar(), BooleanVar(), BooleanVar(), BooleanVar(), BooleanVar()]
 
+        # Get the employee schedule and parse
         cursor.execute(f"SELECT schedule FROM employees WHERE employeeID = {employee[0]}")
         data = cursor.fetchone()[0]
         sched = bin(data).replace("0b", "").zfill(7)
 
+        # Headings
         createText([OwnerManageEmployee], 3, 1, 1, "Usual schedule", "Calibri 18")
         createText([OwnerManageEmployee], 3, 2, 4, "Exceptions (Click any to delete)", "Calibri 18")
         # Checkboxes
@@ -1144,9 +1170,11 @@ def createOwnerManageEmployeesToplevel():
         headings = ("Day", "Month", "Year", "Working?")
         widths = (100, 100, 100, 100)
 
+        # Create the treeview
         exceptionTreeview = ttk.Treeview(OwnerManageEmployee, columns=columns, show='headings', padding=1, selectmode='browse')
         exceptionTreeview.grid(row=4, column=2, columnspan=5, rowspan=6, padx=10, ipady=35)
 
+        # Runs when an exception is clicked in the treeview
         def exceptionSelected(event, tree):
             selected_items = event.widget.selection()
             if selected_items:
@@ -1154,22 +1182,27 @@ def createOwnerManageEmployeesToplevel():
                 cursor.execute(f"SELECT exceptions FROM employees WHERE employeeID = {employee[0]}")
                 exceptions = cursor.fetchone()[0]
                 
-
+                # Get the exceptions
+                # Parse as a list
+                # Pop the clicked exception
                 index = exceptionTreeview.index(item)
                 exceptions = exceptions.split(',')
                 exceptions.pop(index)
                 exc = ""
 
+                # Reparse as a string
                 for e in exceptions:
                     exc += f"{e}, "
                 exc = exc.removesuffix(", ")
                 
+                # Reinsert into the database but with the selected exception deleted
                 cursor.execute(f"UPDATE employees SET exceptions = \"{exc}\" WHERE employeeID = {employee[0]}")
                 db.commit()
 
+                # Remove it from the treeview and repopulate
                 exceptionTreeview.delete(item)
                 populate()
-            
+        # Bind the treeview click event to the function
         exceptionTreeview.bind('<<TreeviewSelect>>', lambda event: exceptionSelected(event, exceptionTreeview))
 
         def populate():
@@ -1180,30 +1213,39 @@ def createOwnerManageEmployeesToplevel():
             cursor.execute(f"""SELECT exceptions FROM employees WHERE employeeID = {employee[0]}""")
             exceptions = cursor.fetchone()[0]
 
+            # Don't do anything if there are no exceptions
             if(not(exceptions)): return
+            # Otherwise, parse the exceptions as a list and iterate through them
             for i in exceptions.split(','):
+                # Parse each string in the list as a list
                 dmnw = str(i).split('/')
                 d, m, n, w, y = genExceptions(int(dmnw[0]), int(dmnw[1]), int(dmnw[2]), int(dmnw[3]), 1)
+                # Place prettified exception into the treeview
                 exceptionTreeview.insert("", END, values=[
                     d, m, y, w
                 ])
+            # Treeview headings
             for c, h, w in zip(columns, headings, widths):
                 exceptionTreeview.column(c, anchor='center', width=w)
                 exceptionTreeview.heading(c, text=h, anchor='center')
 
+        # Update the schedule
         def saveSchedule():
+            # Parse the checkboxes and cast binary => int and insert
             cursor.execute(f"UPDATE employees SET schedule = {int(f'0b{''.join([str(int(i.get())) for i in schedVars])}', 0)} WHERE employeeID = {employee[0]}")
             db.commit()
             messagebox.showinfo("Success", "Employee usual schedule updated", parent=OwnerManageEmployee)
 
         createButton([OwnerManageEmployee], 15, 1, 1, "Save Schedule", saveSchedule, "Calibri 18", ipadx=15)
 
+        # Delete the employee from the system
         def confirmDeleteEmployee():
             deleteEmployee(employee[0], OwnerManageEmployeeToplevel)
             refresh()
 
         createButton([OwnerManageEmployee], 20, 0, 5, "Delete Employee", confirmDeleteEmployee, "Calibri 18", ipadx=15)
 
+        # Add an exception to the employee
         def addException():
             try:
                 d = day.get()
@@ -1214,9 +1256,12 @@ def createOwnerManageEmployeesToplevel():
                 messagebox.showerror("Error", "Invalid value entered", parent=OwnerManageEmployee)
                 return
 
+            # 30 days hath September...
             monthLengths = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+            # If the inputted year is a leap year, take February as 29 days instead
             if(isLeapYear(y)): monthLengths[1] = 29
 
+            # Range validations
             if(y < 2024 or y > 2050):
                 messagebox.showerror("Error", "Invalid year", parent=OwnerManageEmployee)
                 return
@@ -1227,15 +1272,21 @@ def createOwnerManageEmployeesToplevel():
                 messagebox.showerror("Error", "Invalid day", parent=OwnerManageEmployee)
                 return
             
+            # Get the exceptions
             cursor.execute(f"SELECT exceptions FROM employees WHERE employeeID = {employee[0]}")
             data = cursor.fetchone()[0]
+            # Just in-case it gets retrieve weirdly
             if(not(data)): data = ""
+            # Parse the exception as a string and insert at the top
             exceptions = f"{d}/{m}/{y}/{w},{data}".removesuffix(',')
+            # Update the database
             cursor.execute(f"UPDATE employees SET exceptions = \"{exceptions}\" WHERE employeeID = {employee[0]}")
             db.commit()
 
+            # Initial population
             populate()
 
+        # Input boxes/dropdowns
         day = IntVar()
         createText([OwnerManageEmployee], 9, 2, 1, "Day (num)", "Calibri 18")
         createEntryBox([OwnerManageEmployee], 10, 2, 1, day, "Calibri 18")
@@ -1254,13 +1305,16 @@ def createOwnerManageEmployeesToplevel():
 
         createButton([OwnerManageEmployee], 11, 3, 2, "Add Exception", addException, "Calibri 18")
 
+        # Initial population
         populate()
         
+
 
 #############################################################################################################################
 #############################################################################################################################
 #############################################################################################################################
     
+
 # Graph generation
 def createOwnerReportsToplevel():
     # Import item details
@@ -1321,6 +1375,8 @@ def createOwnerReportsToplevel():
     def itemCatChanged(*args):
         [e.destroy() for e in UIElements[2]]
         UIElements[2].clear()
+        # Check the category
+        # (I know it's poor performance to copy a dict like this. Shhh)
         match(selectedItemCat.get()):
             case("Appetisers"):
                 cat[0] = appetisers
@@ -1332,7 +1388,7 @@ def createOwnerReportsToplevel():
                 cat[0] = classics
             case("Sides"):
                 cat[0] = sides
-    # Traces
+    # Run the function when the vars change
     selectedPeriod.trace_add("write", periodChanged)
     selectedItemCat.trace_add("write", itemCatChanged)
 
@@ -1347,7 +1403,8 @@ def createOwnerReportsToplevel():
         title = f"{selectedItemCat.get()}\n{title}"
                    
         graphData = {}
-
+        
+        # Get the names of the items from the category
         for i in list(cat[0].values()):
             graphData.update({i['name']: 0})
 
@@ -1372,7 +1429,7 @@ def createOwnerReportsToplevel():
                         graphData[cat[0][i['details'][0]]['name']] += i['count']
                     except IndexError:
                         graphData[cat[0][i['details'][0]]['name']].append(i['count'])
-        # Plot it
+        # Plot it (twist it, slap it, pull it)
         plotBarChart(title, "Item", "Qty Sold", graphData)
 
     # Generate a line chart of item counts for each month within thhe given period
@@ -1413,6 +1470,7 @@ def createOwnerReportsToplevel():
                 for i in d:
                     graphData[cat[0][i['details'][0]]['name']][m] += i['count']
             m = m + 1
+        # Bop it
         plotLineChart(title, "Month, Year", "Qty Sold", graphData, xLabels)
 
     # Data is in the form of {'Item name': count, 'Item name': count, ...}
@@ -1476,6 +1534,7 @@ def createOwnerReportsToplevel():
         except ValueError:
             messagebox.showerror("Error", "No items in category for given time range", parent=OwnerReports)
     
+    # Generate the latter half of the graph title based on the time range selected
     def graphTitle():
         monYr = time.localtime()
         timeRange = [0, time.time() - 1704067200]
@@ -1506,11 +1565,13 @@ def createOwnerReportsToplevel():
     createButton([OwnerReports], 5, 0, 2, "Sold Food Items", lambda:generateSoldFoodItemsGraph(), "Calibri 20", width=30)
     createButton([OwnerReports], 6, 0, 2, "Item Trends", lambda:generateItemTrendGraph(), "Calibri 20", width=30)
 
+# For sending out mass emails
 def createOwnerPromotionToplevel():
     from emails import sendEmail
     # Create toplevel
     OwnerPromotionToplevel, OwnerPromotion = createToplevel('500x500')
     OwnerPromotionToplevel.protocol("WM_DELETE_WINDOW", lambda: closedWindow(OwnerPromotionToplevel))
+    # Message title entry box
     createText([OwnerPromotion], 1, 0, 4, "Promotion", "Calibri 35 bold")
     createText([OwnerPromotion], 2, 1, 2, "Title:", "Calibri 15", sticky='news')
     title = StringVar()
@@ -1518,41 +1579,35 @@ def createOwnerPromotionToplevel():
 
     createText([OwnerPromotion], 4, 1, 2, "Message:", "Calibri 15")
 
+    # Big scrollable text box for the message box
     bodyEntry = scrolledtext.ScrolledText(OwnerPromotion, wrap=WORD, width=40, height=8, font="Calibri 15") 
     bodyEntry.grid(column=0, row=5, columnspan=4, pady=10, padx=10)
 
     UIButton = []
 
+    # Send multiple emails
     def sendEmails():
+        # Get the message body text
         body = bodyEntry.get("0.0", END)[0:-1]
+        # Validation
         if(body in ["", "\n", "\n\n", "\n\n\n"] or title.get() == ""):
             messagebox.showerror("Error", "Title or message body cannot be blank!", parent=OwnerPromotion)
             return
-        
-        # msg, msgFrame = createToplevel('700x100')
-        # createText([msgFrame], 0, 0, 1, "Sending emails. This may take a minute...")
-        
-        # msg.grid_rowconfigure(0, weight=1)
-        # msg.grid_columnconfigure(0, weight=1)
 
+        # Give feedback to the user
         UIButton[0].destroy()
         UIButton.clear()
         createText([OwnerPromotion], 6, 0, 4, "   Sending emails.\nThis may take a minute...", "Calibri 18", sticky='news', padx=30)
 
+        # Only get customers who have email prefences set to true
         cursor.execute("SELECT email FROM customers WHERE notifPref = 1 OR notifPref = 3")
         data = cursor.fetchall()
 
+        # Send the emails, shows a messagebox, then destroy the toplevel
+        # Has delays to allow for the UI to update the text before it freezes up to send the emails
         root.after(50, lambda:[sendEmail(d[0], title.get(), bodyEntry.get("0.0", END)[0:-1]) for d in data])
         root.after(100, lambda:messagebox.showinfo("Success", "Emails sent"))
         root.after(150, lambda:OwnerPromotionToplevel.destroy())
 
+    # Confirm button
     UIButton.append(createButton([OwnerPromotion], 6, 1, 2, "Send Emails", lambda:sendEmails(), "Calibri 20", width=30))
-
-#############################################################################################################################
-#############################################################################################################################
-#############################################################################################################################
-
-
-#############################################################################################################################
-#############################################################################################################################
-#############################################################################################################################

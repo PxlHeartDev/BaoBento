@@ -7,6 +7,11 @@ from main import db, cursor
 from emails import sendEmail
 from functions import ordinal, floatToPrice
 
+# Comments won't be very detailed here
+# Most things are pretty self-explanatory
+# The string manipulation is quite complicated, but it doesn't need to be fully understood. They work
+
+# Modifier types overhead
 modTypes = {
     1: {0: "No", 1: "Less", 2: "With", 3: "Extra"},                 # Pepper, onion, etc.
     2: {0: "No", 1: "Yes"},                                         # Basic
@@ -14,6 +19,7 @@ modTypes = {
     4: {1: "Normal", 2: "More"},                                    # Spiciness of curry
     5: {0: "No", 1: "Less", 2: "With", 3: "Extra", 4: "Separate"}   # Mayo
 }
+# Sauces
 sauceDict = {
     -1: "",
     0: "No sauce",
@@ -290,26 +296,33 @@ class Order():
         self.content = {"appetisers": [], "baos": [], "bentos": [], "classics": [], "sides": []}
         self.customerID = 0
 
+    # Assign a customer ID to the order
     def assignCustomer(self, ID: int):
         self.customerID = ID
 
+    # Add an item to the order
     def addItem(self, item: object):
         self.content[item.type].append(item.returnObject())
 
+    # Remove an item from the order
     def delItem(self, type: str, index: int):
         self.content[type].pop(index)
 
+    # Checks if the order is blank
     def isBlank(self):
         if self.content == {"appetisers": [], "baos": [], "bentos": [], "classics": [], "sides": []}:
             return True
         return False
 
+    # Get the plain content of the order
     def getOrderContent(self):
         return self.content
 
+    # Return the order as a string
     def returnOrder(self):
         return f"{self.customerID}, '{str(self.content).replace("'", '"')}', 0, 0, {int(time.time() - 1704067200)}"
     
+    # Get the total price of the order
     def getTotalPrice(self):
         price = 0.00
         for t in ["appetisers", "baos", "bentos", "classics", "sides"]:
@@ -317,6 +330,8 @@ class Order():
                 price += float(getType[t][c['details'][0]]['price']) * float(c['count'])
         return price
 
+    # Complete the order and add it to the system
+    # Also sends an email to the customer
     def completeOrder(self, pickupTime: int, note: str):
         from documents import createOrderReceipt
         order = self.returnOrder()
@@ -347,6 +362,7 @@ class Order():
                             \nPrice: {floatToPrice(self.getTotalPrice())}",
                             f"documents/orderReceipts/{orderID}.docx")
 
+# Returns the category of the item from a string
 getType = {
     "appetisers": appetisers,
     "baos": baos,
