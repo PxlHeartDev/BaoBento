@@ -229,11 +229,13 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
     # Sub-function, creates the "Add Item" top level
     def createOwnerAddItemTopLevel(type: str):
         # Create top level
-        OwnerAddItemToplevel, OwnerAddItem = createToplevel('800x600')
+        OwnerAddItemToplevel, OwnerAddItem = createToplevel('800x800')
 
         # Check the item type
         match(type):
             case("appetisers"):
+
+                OwnerAddItemToplevel.geometry('1000x800')
 
                 # Import
                 from orders import appetisers, appetiserPermittedSauces
@@ -278,7 +280,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                             oListSauce.append(sauceDict[i])
                         # Replace "Micro Curry" with "Small Curry" if small is the default
                         if(appStuff['defaultSauce'] == 3):
-                            oListSauce[2] = "Small Curry"
+                            oListSauce[2] = f"Small Curry [Veg]"
                         UIElements.append(createDropdown([OwnerAddItem], 5, 2, 1, oListSauce, sauceSelected, "Calibri 15 bold", sauceDict[appStuff['defaultSauce']], 24, 5))
                     # No sauce allowed
                     else:
@@ -321,6 +323,9 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 createEntryBox([OwnerAddItem], 8, 1, 2, note, "Calibri 20", width=30, ipadx=30)
 
             case("baos"):
+
+                OwnerAddItemToplevel.geometry('850x800')
+
                 # Import
                 from orders import baos, baoPermittedSauces, picklesDict
 
@@ -473,7 +478,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                         oListSauce = ["No sauce"]
                         for i in bentoPermittedSauces:
                             oListSauce.append(sides[i]['name'])
-                        UIElements[0].append(createDropdown([OwnerAddItem], 5, 2, 2, oListSauce, sauceSelected, "Calibri 15 bold", sauceDict[bentoStuff['sauce']], 24, 5))
+                        UIElements[0].append(createDropdown([OwnerAddItem], 5, 2, 2, oListSauce, sauceSelected, "Calibri 15 bold", sides[bentoStuff['sauce']]['name'], 24, 5))
                     else:
                         sauceSelected.set("")
                         UIElements[0].append(createText([OwnerAddItem], 5, 2, 2, "No sauce", "Calibri 20"))
@@ -483,7 +488,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 def bentoSideChanged(side: int):
                     s = side - 1
                     # Ignore if it is the init value
-                    if(not(bentoSideSelected[s].get())): return
+                    if(not(bentoSideSelected[s].get()) and bentoSideSelected[s].get() != ""): return
                     # Get the side details in full
                     bentoSideStuff = bentoSides[keyFromVal(bentoSides, bentoSideSelected[s].get())]
                     # Re-used options list
@@ -574,7 +579,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
 
             case("classics"):
 
-                OwnerAddItemToplevel.geometry('1000x600')
+                OwnerAddItemToplevel.geometry('1050x600')
                 
                 # Import
                 from orders import classics, classicSides
@@ -624,7 +629,7 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
 
                 def sideChanged(*args):
                     # Ignore if it is the init value
-                    if(not(sideSelected.get())): return
+                    if(not(sideSelected.get()) and sideSelected.get() != ""): return
                     # Get the side details in full
                     sideStuff = classicSides[keyFromVal(classicSides, sideSelected.get())]
                     # Re-used options list
@@ -679,6 +684,8 @@ def createOwnerCreateOrderTopLevel(customerID = 0):
                 createEntryBox([OwnerAddItem], 12, 1, 2, note, "Calibri 20", width=30, ipadx=30)
                 
             case("sides"):
+
+                OwnerAddItemToplevel.geometry('800x600')
 
                 # Import
                 from orders import sides

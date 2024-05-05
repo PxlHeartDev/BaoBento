@@ -276,7 +276,7 @@ def genSchedule():
 
 ### Menu ###
 createText([EmployeeMenu], 1, 0, 4, "Employee Portal", "Calibri 35 bold")
-createButton([EmployeeMenu], 2, 1, 2, "Schedule", lambda:setFrame(EmployeeSchedule, function=genSchedule, geometry='600x800'), "Calibri 18", ipadx=20)
+createButton([EmployeeMenu], 2, 1, 2, "Schedule", lambda:setFrame(EmployeeSchedule, function=genSchedule, geometry='800x800'), "Calibri 18", ipadx=20)
 createButton([EmployeeMenu], 3, 1, 2, "Logout", lambda:logout(), "Calibri 18", ipadx=20)
 
 

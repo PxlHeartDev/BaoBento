@@ -62,9 +62,9 @@ def genBrds(columns: int, items: int):
     borders[3].extend(genBrdArr(False, columns))
 
     for i in range(0, items):
-        borders[0].extend(genBrdArr(False, columns))
+        borders[0].extend(genBrdArr(True, columns))
         borders[1].extend(genBrdArr(False, columns))
-        borders[2].extend(genBrdArr(True, columns))
+        borders[2].extend(genBrdArr(False, columns))
         borders[3].extend(genBrdArr(False, columns))
 
         # This whole section is a mess. Making it so that the column value isn't reduced by 1 when there's only 2 columns works. Don't ask me how.

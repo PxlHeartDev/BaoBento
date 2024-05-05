@@ -152,7 +152,7 @@ bentos = {
     6:  {'name': 'Sriracha Noodles',         'price': 9.30, 'mod': [pepper, onion[0], pork, chicken, hot],  'sauce': -1, 'side1': [5, []], 'side2': [6, [1, 1, 1, 1, 1]], 'desc': "Noodles with Chinese bbq pork and chicken tossed in a spicy Thai sriracha sauce"},
     7:  {'name': 'Teriyaki Noodles [Veg]',   'price': 9.30, 'mod': [carrot, beanSprout, onion[0], peas[1]], 'sauce': -1, 'side1': [1, []], 'side2': [6, [1, 1, 1, 1, 0]], 'desc': "Thicker noodles with carrot and beansprouts tossed in a tangy teriyaki sauce"},
     8:  {'name': 'Katsu Chicken',            'price': 9.30, 'mod': [pickles[0]],                            'sauce': 4,  'side1': [1, []], 'side2': [2, []], 'desc': "Panko fried chicken breast on a bed of white cabbage"},
-    9:  {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                            'sauce': 6, 'side1': [5, []], 'side2': [2, []], 'desc': "Spicy, crispy fried chicken strips on a bed of white cabbage"},
+    9:  {'name': 'Korean Fried Chicken',     'price': 9.30, 'mod': [pickles[0]],                            'sauce': 6,  'side1': [5, []], 'side2': [2, []], 'desc': "Spicy, crispy fried chicken strips on a bed of white cabbage"},
     10: {'name': 'Squid',                    'price': 9.80, 'mod': [pepper, onion[0], hot],                 'sauce': 4,  'side1': [1, []], 'side2': [2, []], 'desc': "Breaded shredded squid with sliced pepper and onion, all mixed with spicy salt and chilli flakes"}
 }
 bentoSides = {
